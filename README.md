@@ -15,7 +15,8 @@ I like to write down and develop every idea that comes to mind 🚀
 ### 💻 What I'm working on  
 - Small personal projects  
 - Learning new tools and improving my coding workflow  
-- Exploring ideas that could eventually grow into something bigger  
+- Exploring ideas
+- Learning for School
 
 
 
