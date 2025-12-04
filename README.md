@@ -22,10 +22,13 @@ I like to write down and develop every idea that comes to mind 🚀
 
 ### 🏃‍♂️ About me  
 Even though it's not directly tech-related, it shapes who I am:  
-- ⚡ **Very sporty**  
+
+**My Sports**  
 - 🏊🚴🏃 Doing **Triathlon**  
-- 🏀 Playing **Basketball**  
-- 💻 I follow every small interesting tech idea  
+- 🏀 Playing **Basketball**
+
+**Other Important Facts**  
+- 💻 I follow every small interesting tech idea
 
 
 ### 📫 How to reach me  
