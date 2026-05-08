@@ -25,7 +25,6 @@ Even though it's not directly tech-related, it shapes who I am:
 
 **My Sports**  
 - 🏊🚴🏃 Doing **Triathlon**  
-- 🏀 Playing **Basketball**
 
 **Other Important Facts**  
 - 💻 I follow every small interesting tech idea
