@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Draft types (mutable, file-private)
+// MARK: - Draft types
 
 private struct DraftStep: Identifiable {
     let id: String
@@ -62,8 +62,6 @@ struct CreateWorkoutView: View {
     @State private var name = ""
     @State private var sport: Sport = .cycling
     @State private var selectedTags: Set<WorkoutTag> = []
-    @State private var tss: Double = 70
-    @State private var intensityFactor: Double = 0.75
     @State private var authorName = ""
     @State private var workoutDescription = ""
     @State private var steps: [DraftStep] = []
@@ -71,18 +69,40 @@ struct CreateWorkoutView: View {
     @State private var editingStepID: String? = nil
     @State private var showStepEditor = false
 
+    // MARK: Computed training metrics
+
+    private var totalSeconds: Int { steps.reduce(0) { $0 + $1.durationSeconds } }
+
+    private var computedIF: Double {
+        let total = Double(totalSeconds)
+        guard total > 0 else { return 0.0 }
+        let weighted = steps.reduce(0.0) {
+            $0 + ($1.zone?.ifValue ?? $1.intensity.baseIF) * Double($1.durationSeconds)
+        }
+        return (weighted / total * 100).rounded() / 100
+    }
+
+    private var computedTSS: Int {
+        let hours = Double(totalSeconds) / 3600.0
+        return Int((hours * computedIF * computedIF * 100).rounded())
+    }
+
+    private var previewSteps: [WorkoutStep] {
+        steps.enumerated().map { idx, d in d.toWorkoutStep(index: idx) }
+    }
+
     private var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty && !steps.isEmpty
     }
-
-    private var totalSeconds: Int { steps.reduce(0) { $0 + $1.durationSeconds } }
 
     var body: some View {
         NavigationStack {
             Form {
                 basicInfoSection
-                detailsSection
                 stepsSection
+                if !steps.isEmpty { previewSection }
+                metricsSection
+                detailsSection
             }
             .scrollContentBackground(.hidden)
             .background(Color.appBackground)
@@ -128,39 +148,10 @@ struct CreateWorkoutView: View {
             .pickerStyle(.segmented)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Tags")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text("Tags").font(.caption).foregroundStyle(.secondary)
                 TagToggleGrid(selected: $selectedTags)
             }
             .padding(.vertical, 4)
-        }
-    }
-
-    private var detailsSection: some View {
-        Section("Details") {
-            LabeledContent("TSS") {
-                HStack(spacing: 8) {
-                    Slider(value: $tss, in: 0...200, step: 1)
-                    Text("\(Int(tss))")
-                        .font(.callout.monospacedDigit())
-                        .frame(width: 34, alignment: .trailing)
-                }
-            }
-
-            LabeledContent("IF") {
-                HStack(spacing: 8) {
-                    Slider(value: $intensityFactor, in: 0.5...1.2, step: 0.01)
-                    Text(String(format: "%.2f", intensityFactor))
-                        .font(.callout.monospacedDigit())
-                        .frame(width: 40, alignment: .trailing)
-                }
-            }
-
-            TextField("Autor", text: $authorName)
-
-            TextField("Beschreibung", text: $workoutDescription, axis: .vertical)
-                .lineLimit(3...6)
         }
     }
 
@@ -190,15 +181,6 @@ struct CreateWorkoutView: View {
                 Label("Schritt hinzufügen", systemImage: "plus.circle.fill")
                     .foregroundStyle(Color.orange)
             }
-
-            if !steps.isEmpty {
-                LabeledContent("Gesamtdauer") {
-                    let m = totalSeconds / 60
-                    Text(m >= 60 ? "\(m/60)h \(m%60)min" : "\(m) min")
-                        .font(.callout.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-            }
         } header: {
             HStack {
                 Text("Schritte (\(steps.count))")
@@ -207,6 +189,51 @@ struct CreateWorkoutView: View {
                 EditButton().font(.caption)
                 #endif
             }
+        } footer: {
+            if !steps.isEmpty {
+                let m = totalSeconds / 60
+                Text("Gesamtdauer: \(m >= 60 ? "\(m/60)h \(m%60)min" : "\(m) min")")
+            }
+        }
+    }
+
+    // Live interval profile chart
+    private var previewSection: some View {
+        Section("Vorschau") {
+            IntervalChartView(steps: previewSteps, totalDuration: totalSeconds)
+                .frame(minHeight: 160)
+                .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
+        }
+    }
+
+    // Auto-computed metrics (read-only)
+    @ViewBuilder
+    private var metricsSection: some View {
+        if !steps.isEmpty {
+            Section {
+                LabeledContent("IF (Intensitätsfaktor)") {
+                    Text(String(format: "%.2f", computedIF))
+                        .font(.callout.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                LabeledContent("TSS") {
+                    Text("\(computedTSS)")
+                        .font(.callout.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Berechnete Werte")
+            } footer: {
+                Text("Automatisch aus Zonen und Dauer berechnet")
+            }
+        }
+    }
+
+    private var detailsSection: some View {
+        Section("Details") {
+            TextField("Autor", text: $authorName)
+            TextField("Beschreibung", text: $workoutDescription, axis: .vertical)
+                .lineLimit(3...6)
         }
     }
 
@@ -221,8 +248,8 @@ struct CreateWorkoutView: View {
             sport: sport,
             tags: Array(selectedTags),
             totalDurationSeconds: total,
-            tss: Int(tss),
-            intensityFactor: intensityFactor,
+            tss: computedTSS,
+            intensityFactor: computedIF,
             description: workoutDescription.isEmpty ? name : workoutDescription,
             author: authorName.isEmpty ? "Eigenes Workout" : authorName,
             steps: workoutSteps,
@@ -279,8 +306,7 @@ private struct TagToggleGrid: View {
     @Binding var selected: Set<WorkoutTag>
 
     var body: some View {
-        let columns = [GridItem(.adaptive(minimum: 88), spacing: 8)]
-        LazyVGrid(columns: columns, spacing: 8) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)], spacing: 8) {
             ForEach(WorkoutTag.allCases, id: \.self) { tag in
                 let on = selected.contains(tag)
                 Button {
@@ -354,9 +380,7 @@ private struct StepEditorSheet: View {
                             Text("Keine Zone").foregroundStyle(.primary)
                             Spacer()
                             if draft.zone == nil {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.secondary)
-                                    .fontWeight(.semibold)
+                                Image(systemName: "checkmark").foregroundStyle(.secondary).fontWeight(.semibold)
                             }
                         }
                     }
@@ -367,15 +391,12 @@ private struct StepEditorSheet: View {
                             draft.zone = zone
                         } label: {
                             HStack(spacing: 10) {
-                                Circle()
-                                    .fill(zone.color)
-                                    .frame(width: 10, height: 10)
-                                Text("\(zone.rawValue) · \(zone.name)")
-                                    .foregroundStyle(.primary)
+                                Circle().fill(zone.color).frame(width: 10, height: 10)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text("\(zone.rawValue) · \(zone.name)").foregroundStyle(.primary)
+                                    Text(zone.ftpRange).font(.caption2).foregroundStyle(.tertiary)
+                                }
                                 Spacer()
-                                Text(zone.ftpRange)
-                                    .font(.caption)
-                                    .foregroundStyle(.tertiary)
                                 if draft.zone == zone {
                                     Image(systemName: "checkmark")
                                         .foregroundStyle(zone.color)
