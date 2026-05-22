@@ -4,67 +4,119 @@ struct IntervalChartView: View {
     let steps: [WorkoutStep]
     let totalDuration: Int
 
-    @State private var hoveredStep: WorkoutStep?
+    @State private var selectedStep: WorkoutStep?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Interval Structure")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader
 
+            // Chart bars
             GeometryReader { geo in
                 HStack(spacing: 2) {
                     ForEach(steps) { step in
                         let w = max(4, geo.size.width * CGFloat(step.durationSeconds) / CGFloat(max(1, totalDuration)))
-                        ZoneBlock(step: step, width: w, isHovered: hoveredStep?.id == step.id)
-                            .onHover { hovered in
-                                hoveredStep = hovered ? step : nil
+                        ZoneBlock(
+                            step: step,
+                            width: w,
+                            isHighlighted: selectedStep?.id == step.id
+                        )
+                        .onTapGesture {
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                selectedStep = selectedStep?.id == step.id ? nil : step
                             }
+                        }
+                        #if os(macOS)
+                        .onHover { hovered in
+                            withAnimation(.easeOut(duration: 0.1)) {
+                                selectedStep = hovered ? step : nil
+                            }
+                        }
+                        #endif
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .frame(height: 72)
 
-            // Tooltip
-            if let step = hoveredStep {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(step.zoneColor)
-                        .frame(width: 8, height: 8)
-                    Text(step.description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text(step.formattedDuration)
-                        .font(.caption.monospacedDigit().weight(.medium))
-                        .foregroundStyle(.primary)
-                    if let zone = step.zone {
-                        Text(zone.rawValue)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(zone.color)
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.appCard, in: RoundedRectangle(cornerRadius: 8))
-                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            // Tooltip / selected step info
+            if let step = selectedStep {
+                stepInfo(step)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            } else {
+                tapHint
             }
 
             // Zone legend
-            zoneLegend
+            if !usedZones.isEmpty {
+                zoneLegend
+            }
         }
-        .animation(.easeOut(duration: 0.15), value: hoveredStep?.id)
+        .animation(.easeOut(duration: 0.15), value: selectedStep?.id)
     }
 
-    private var usedZones: [PowerZone] {
-        let zones = steps.compactMap(\.zone)
-        return PowerZone.allCases.filter { zones.contains($0) }
+    // MARK: - Subviews
+
+    private var sectionHeader: some View {
+        HStack {
+            Label("Intervallstruktur", systemImage: "waveform.path.ecg")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(formattedTotal)
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private func stepInfo(_ step: WorkoutStep) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(step.zoneColor)
+                .frame(width: 10, height: 10)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(step.intensity.displayName.uppercased())
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                Text(step.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(step.formattedDuration)
+                    .font(.callout.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(.primary)
+                if let zone = step.zone {
+                    Text(zone.rawValue)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(zone.color)
+                } else if let n = step.targetZoneNumber {
+                    Text("HR Z\(n)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.appBorder))
+    }
+
+    private var tapHint: some View {
+        Text("Balken antippen für Details")
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 6)
     }
 
     private var zoneLegend: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: 14) {
                 ForEach(usedZones, id: \.self) { zone in
                     HStack(spacing: 5) {
                         RoundedRectangle(cornerRadius: 2)
@@ -81,24 +133,37 @@ struct IntervalChartView: View {
             }
         }
     }
+
+    // MARK: - Helpers
+
+    private var usedZones: [PowerZone] {
+        let zones = steps.compactMap(\.zone)
+        return PowerZone.allCases.filter { zones.contains($0) }
+    }
+
+    private var formattedTotal: String {
+        let m = totalDuration / 60
+        return m >= 60 ? "\(m / 60)h \(m % 60)min" : "\(m) min"
+    }
 }
+
+// MARK: - Zone block
 
 private struct ZoneBlock: View {
     let step: WorkoutStep
     let width: CGFloat
-    let isHovered: Bool
+    let isHighlighted: Bool
 
     var body: some View {
         RoundedRectangle(cornerRadius: 3)
-            .fill(step.zoneColor.opacity(isHovered ? 1.0 : 0.85))
+            .fill(step.zoneColor.opacity(isHighlighted ? 1.0 : 0.80))
             .frame(width: width)
             .overlay(
-                isHovered
-                ? RoundedRectangle(cornerRadius: 3)
-                    .stroke(.white.opacity(0.3), lineWidth: 1)
-                : nil
+                isHighlighted
+                    ? RoundedRectangle(cornerRadius: 3).stroke(.white.opacity(0.35), lineWidth: 1.5)
+                    : nil
             )
-            .scaleEffect(y: isHovered ? 1.05 : 1.0, anchor: .bottom)
-            .animation(.easeOut(duration: 0.1), value: isHovered)
+            .scaleEffect(y: isHighlighted ? 1.06 : 1.0, anchor: .bottom)
+            .animation(.easeOut(duration: 0.1), value: isHighlighted)
     }
 }

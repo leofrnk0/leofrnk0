@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 struct WorkoutDetailView: View {
     let workout: Workout
@@ -33,7 +36,7 @@ struct WorkoutDetailView: View {
         }
     }
 
-    // MARK: - Sport header + tags
+    // MARK: - Sport header
 
     private var sportHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -71,38 +74,40 @@ struct WorkoutDetailView: View {
         }
     }
 
-    // MARK: - Main stats
+    // MARK: - Stats
 
     private var mainStats: some View {
         LazyVGrid(
-            columns: [GridItem(.flexible()), GridItem(.flexible()),
-                      GridItem(.flexible()), GridItem(.flexible())],
+            columns: Array(repeating: GridItem(.flexible()), count: 4),
             spacing: 10
         ) {
-            StatCard(icon: "clock.fill",      label: "Gesamt",     value: workout.formattedDuration,                          color: .secondary)
-            StatCard(icon: "bolt.fill",       label: "TSS",         value: "\(workout.tss)",                                   color: .orange)
-            StatCard(icon: "waveform.path",   label: "IF",          value: String(format: "%.2f", workout.intensityFactor),    color: workout.sport.color)
-            StatCard(icon: "repeat",          label: "Intervalle",  value: "\(workout.intervalCount)",                         color: .blue)
+            StatCard(icon: "clock.fill",    label: "Gesamt",    value: workout.formattedDuration,                        color: .secondary)
+            StatCard(icon: "bolt.fill",     label: "TSS",       value: "\(workout.tss)",                                 color: .orange)
+            StatCard(icon: "waveform.path", label: "IF",        value: String(format: "%.2f", workout.intensityFactor),  color: workout.sport.color)
+            StatCard(icon: "repeat",        label: "Intervalle",value: "\(workout.intervalCount)",                        color: .blue)
         }
     }
 
     // MARK: - Time breakdown
 
+    private var timeBreakdownData: [(label: String, seconds: Int, color: Color)] {
+        [
+            ("Arbeit",     workout.steps.filter { $0.intensity == .work     }.reduce(0) { $0 + $1.durationSeconds }, .orange),
+            ("Erholung",   workout.steps.filter { $0.intensity == .rest     }.reduce(0) { $0 + $1.durationSeconds }, Color(white: 0.45)),
+            ("Warm-up",    workout.steps.filter { $0.intensity == .warmup   }.reduce(0) { $0 + $1.durationSeconds }, .blue),
+            ("Cool-down",  workout.steps.filter { $0.intensity == .cooldown }.reduce(0) { $0 + $1.durationSeconds }, .cyan),
+        ].filter { $0.seconds > 0 }
+    }
+
     private var timeBreakdown: some View {
-        let workSec  = workout.steps.filter { $0.intensity == .work     }.reduce(0) { $0 + $1.durationSeconds }
-        let restSec  = workout.steps.filter { $0.intensity == .rest     }.reduce(0) { $0 + $1.durationSeconds }
-        let warmSec  = workout.steps.filter { $0.intensity == .warmup   }.reduce(0) { $0 + $1.durationSeconds }
-        let coolSec  = workout.steps.filter { $0.intensity == .cooldown }.reduce(0) { $0 + $1.durationSeconds }
-        let total    = Double(max(1, workout.totalDurationSeconds))
-
+        let data = timeBreakdownData
+        let total = Double(max(1, workout.totalDurationSeconds))
         return VStack(alignment: .leading, spacing: 10) {
-            sectionHeader("Trainingszeit-Aufschlüsselung", icon: "chart.bar.fill")
-
+            sectionLabel("Trainingszeit-Aufschlüsselung", icon: "chart.bar.fill")
             VStack(spacing: 8) {
-                TimeBar(label: "Arbeit",      seconds: workSec, total: total, color: .orange)
-                TimeBar(label: "Erholung",    seconds: restSec, total: total, color: Color(white: 0.45))
-                TimeBar(label: "Warm-up",     seconds: warmSec, total: total, color: .blue)
-                TimeBar(label: "Cool-down",   seconds: coolSec, total: total, color: .cyan)
+                ForEach(data, id: \.label) { item in
+                    TimeBar(label: item.label, seconds: item.seconds, total: total, color: item.color)
+                }
             }
             .padding(14)
             .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
@@ -112,30 +117,34 @@ struct WorkoutDetailView: View {
 
     // MARK: - Zone distribution
 
-    private var zoneDistribution: some View {
-        let zonedSteps = workout.steps.compactMap { step -> (PowerZone, Int)? in
-            guard let z = step.zone else { return nil }
-            return (z, step.durationSeconds)
+    private var zoneStats: [(zone: PowerZone, seconds: Int)] {
+        let grouped = Dictionary(
+            grouping: workout.steps.compactMap { s -> (PowerZone, Int)? in
+                guard let z = s.zone else { return nil }
+                return (z, s.durationSeconds)
+            },
+            by: { $0.0 }
+        ).mapValues { $0.reduce(0) { $0 + $1.1 } }
+        return PowerZone.allCases.compactMap { z in
+            guard let secs = grouped[z], secs > 0 else { return nil }
+            return (z, secs)
         }
-        guard !zonedSteps.isEmpty else { return AnyView(EmptyView()) }
+    }
 
-        let grouped = Dictionary(grouping: zonedSteps, by: { $0.0 })
-            .mapValues { $0.reduce(0) { $0 + $1.1 } }
-        let total = Double(max(1, grouped.values.reduce(0, +)))
-        let sortedZones = PowerZone.allCases.filter { grouped[$0] != nil }
-
-        return AnyView(
+    @ViewBuilder
+    private var zoneDistribution: some View {
+        let stats = zoneStats
+        if !stats.isEmpty {
+            let total = Double(stats.reduce(0) { $0 + $1.seconds })
             VStack(alignment: .leading, spacing: 10) {
-                sectionHeader("Zonenverteilung", icon: "square.3.layers.3d")
-
+                sectionLabel("Zonenverteilung", icon: "square.3.layers.3d")
                 VStack(spacing: 8) {
-                    ForEach(sortedZones, id: \.self) { zone in
-                        let secs = grouped[zone] ?? 0
+                    ForEach(stats, id: \.zone) { item in
                         TimeBar(
-                            label: "\(zone.rawValue) · \(zone.name)",
-                            seconds: secs,
+                            label: "\(item.zone.rawValue) · \(item.zone.name)",
+                            seconds: item.seconds,
                             total: total,
-                            color: zone.color,
+                            color: item.zone.color,
                             showPercent: true
                         )
                     }
@@ -144,14 +153,14 @@ struct WorkoutDetailView: View {
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder))
             }
-        )
+        }
     }
 
     // MARK: - Description
 
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionHeader("Beschreibung", icon: "text.alignleft")
+            sectionLabel("Beschreibung", icon: "text.alignleft")
             Text(workout.description)
                 .font(.body)
                 .foregroundStyle(.primary)
@@ -166,7 +175,7 @@ struct WorkoutDetailView: View {
         HStack(spacing: 12) {
             Image(systemName: "person.circle.fill")
                 .font(.title2)
-                .foregroundStyle(workout.sport.color.opacity(0.8))
+                .foregroundStyle(workout.sport.color.opacity(0.85))
             VStack(alignment: .leading, spacing: 2) {
                 Text("Autor").font(.caption).foregroundStyle(.tertiary)
                 Text(workout.author).font(.callout.weight(.medium)).foregroundStyle(.primary)
@@ -180,7 +189,7 @@ struct WorkoutDetailView: View {
 
     // MARK: - Helper
 
-    private func sectionHeader(_ title: String, icon: String) -> some View {
+    private func sectionLabel(_ title: String, icon: String) -> some View {
         Label(title, systemImage: icon)
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(.secondary)
@@ -189,15 +198,15 @@ struct WorkoutDetailView: View {
 
 // MARK: - Time bar
 
-private struct TimeBar: View {
+struct TimeBar: View {
     let label: String
     let seconds: Int
     let total: Double
     let color: Color
     var showPercent: Bool = false
 
-    private var fraction: Double { min(1, Double(seconds) / total) }
-    private var minutes: Int { seconds / 60 }
+    private var fraction: Double { min(1.0, Double(seconds) / total) }
+
     private var formatted: String {
         let m = seconds / 60; let s = seconds % 60
         return s == 0 ? "\(m) min" : "\(m)m \(s)s"
@@ -208,12 +217,16 @@ private struct TimeBar: View {
             Text(label)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
-                .frame(width: 130, alignment: .leading)
+                .lineLimit(1)
+                .frame(width: 140, alignment: .leading)
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4).fill(color.opacity(0.12)).frame(maxWidth: .infinity)
-                    RoundedRectangle(cornerRadius: 4).fill(color.opacity(0.8))
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(color.opacity(0.12))
+                        .frame(maxWidth: .infinity)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(color.opacity(0.85))
                         .frame(width: max(4, geo.size.width * fraction))
                 }
             }
@@ -225,7 +238,8 @@ private struct TimeBar: View {
                     .foregroundStyle(.primary)
                 if showPercent {
                     Text("(\(Int(fraction * 100))%)")
-                        .font(.caption2).foregroundStyle(.tertiary)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
             }
             .frame(width: 90, alignment: .trailing)
@@ -262,7 +276,7 @@ struct SourceSection: View {
                 .foregroundStyle(.secondary)
 
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
+                HStack {
                     sourceTypeBadge
                     Spacer()
                     Text("\(source.year)")
@@ -276,8 +290,7 @@ struct SourceSection: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(source.authors.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(.secondary)
 
                 if let inst = source.institution {
                     Label(inst, systemImage: "building.columns")
@@ -287,8 +300,7 @@ struct SourceSection: View {
                 if let doi = source.doi {
                     HStack(spacing: 5) {
                         Image(systemName: "link").font(.caption2)
-                        Text("DOI: \(doi)")
-                            .font(.caption.monospacedDigit())
+                        Text("DOI: \(doi)").font(.caption.monospacedDigit())
                     }
                     .foregroundStyle(.blue.opacity(0.85))
                 }
@@ -296,16 +308,16 @@ struct SourceSection: View {
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.blue.opacity(0.25), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.blue.opacity(0.25)))
         }
     }
 
     private var sourceTypeBadge: some View {
         let (icon, label): (String, String) = switch source.type {
-        case "paper": ("doc.text", "Paper")
-        case "book":  ("book.closed", "Buch")
-        case "thesis":("graduationcap", "Dissertation")
-        default:      ("person.fill", "Coaching")
+        case "paper":  ("doc.text",       "Paper")
+        case "book":   ("book.closed",    "Buch")
+        case "thesis": ("graduationcap",  "Dissertation")
+        default:       ("person.fill",    "Coaching")
         }
         return Label(label, systemImage: icon)
             .font(.caption2.weight(.semibold))
@@ -315,27 +327,37 @@ struct SourceSection: View {
     }
 }
 
-// MARK: - FIT Download
+// MARK: - FIT Download Button
 
 struct FITDownloadButton: View {
     let workout: Workout
     @State private var isGenerating = false
     @State private var fitFileURL: URL?
     @State private var showShare = false
+    @State private var errorMessage: String?
+    @State private var showError = false
 
     var body: some View {
         Button { generateAndShare() } label: {
             if isGenerating {
-                ProgressView().controlSize(.small)
+                ProgressView().controlSize(.small).tint(.white)
             } else {
                 Label("Download .FIT", systemImage: "square.and.arrow.down")
             }
         }
         .buttonStyle(.borderedProminent)
         .tint(workout.sport.color)
+        .disabled(isGenerating)
+        .alert("Fehler", isPresented: $showError) {
+            Button("OK") {}
+        } message: {
+            Text(errorMessage ?? "Unbekannter Fehler")
+        }
         #if os(iOS)
         .sheet(isPresented: $showShare) {
-            if let url = fitFileURL { ShareSheet(url: url) }
+            if let url = fitFileURL {
+                ShareSheet(url: url)
+            }
         }
         #endif
     }
@@ -343,17 +365,27 @@ struct FITDownloadButton: View {
     private func generateAndShare() {
         isGenerating = true
         Task.detached(priority: .userInitiated) {
-            let data = WorkoutToFIT.encode(workout)
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("\(workout.id).fit")
-            try? data.write(to: url)
-            await MainActor.run {
-                isGenerating = false
-                #if os(macOS)
-                savePanelMacOS(url: url)
-                #else
-                fitFileURL = url; showShare = true
-                #endif
+            do {
+                let data = WorkoutToFIT.encode(workout)
+                guard !data.isEmpty else { throw FITError.encodingFailed }
+                let url = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("\(workout.id).fit")
+                try data.write(to: url)
+                await MainActor.run {
+                    isGenerating = false
+                    #if os(macOS)
+                    savePanelMacOS(url: url)
+                    #else
+                    fitFileURL = url
+                    showShare = true
+                    #endif
+                }
+            } catch {
+                await MainActor.run {
+                    isGenerating = false
+                    errorMessage = error.localizedDescription
+                    showError = true
+                }
             }
         }
     }
@@ -363,12 +395,17 @@ struct FITDownloadButton: View {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "\(workout.id).fit"
         panel.allowedContentTypes = [.data]
-        panel.message = "Save \(workout.name) as .fit file for Garmin / Wahoo / Zwift"
+        panel.message = "Als .fit-Datei speichern für Garmin / Wahoo / Zwift"
         if panel.runModal() == .OK, let dest = panel.url {
             try? FileManager.default.copyItem(at: url, to: dest)
         }
     }
     #endif
+}
+
+private enum FITError: LocalizedError {
+    case encodingFailed
+    var errorDescription: String? { "FIT-Datei konnte nicht erstellt werden." }
 }
 
 #if os(iOS)
