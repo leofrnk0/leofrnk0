@@ -508,7 +508,7 @@ private struct MetricPill: View {
 
 // MARK: - Step editor sheet (redesigned, no Form)
 
-struct StepEditorSheet: View {
+fileprivate struct StepEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: DraftStep
     let isNew: Bool
@@ -627,7 +627,7 @@ struct StepEditorSheet: View {
 
 // MARK: - Repeat block editor sheet
 
-struct RepeatBlockEditorSheet: View {
+fileprivate struct RepeatBlockEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var count: Int
     @State private var innerSteps: [DraftStep]
