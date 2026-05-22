@@ -125,17 +125,16 @@ struct WorkoutDetailView: View {
             },
             by: { $0.0 }
         ).mapValues { $0.reduce(0) { $0 + $1.1 } }
-        return PowerZone.allCases.compactMap { z in
-            guard let secs = grouped[z], secs > 0 else { return nil }
-            return (z, secs)
-        }
+        // Always return all 5 zones (0 seconds if unused)
+        return PowerZone.allCases.map { z in (z, grouped[z] ?? 0) }
     }
 
     @ViewBuilder
     private var zoneDistribution: some View {
         let stats = zoneStats
-        if !stats.isEmpty {
-            let total = Double(stats.reduce(0) { $0 + $1.seconds })
+        let totalActive = Double(stats.reduce(0) { $0 + $1.seconds })
+        if totalActive > 0 {
+            let total = totalActive
             VStack(alignment: .leading, spacing: 10) {
                 sectionLabel("Zonenverteilung", icon: "square.3.layers.3d")
                 VStack(spacing: 8) {

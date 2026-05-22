@@ -10,33 +10,37 @@ struct IntervalChartView: View {
         VStack(alignment: .leading, spacing: 10) {
             sectionHeader
 
-            // Chart bars
+            // Profile chart — bars bottom-aligned, height = intensity
             GeometryReader { geo in
-                HStack(spacing: 2) {
-                    ForEach(steps) { step in
-                        let w = max(4, geo.size.width * CGFloat(step.durationSeconds) / CGFloat(max(1, totalDuration)))
-                        ZoneBlock(
-                            step: step,
-                            width: w,
-                            isHighlighted: selectedStep?.id == step.id
-                        )
-                        .onTapGesture {
-                            withAnimation(.easeOut(duration: 0.15)) {
-                                selectedStep = selectedStep?.id == step.id ? nil : step
-                            }
+                ZStack(alignment: .bottom) {
+                    // Baseline
+                    Rectangle()
+                        .fill(Color.appBorder)
+                        .frame(height: 1)
+
+                    HStack(alignment: .bottom, spacing: 2) {
+                        ForEach(steps) { step in
+                            let w = max(4, geo.size.width * CGFloat(step.durationSeconds) / CGFloat(max(1, totalDuration)))
+                            let h = max(6, geo.size.height * step.heightFactor)
+                            ZoneBlock(step: step, width: w, height: h,
+                                      isHighlighted: selectedStep?.id == step.id)
+                                .onTapGesture {
+                                    withAnimation(.easeOut(duration: 0.15)) {
+                                        selectedStep = selectedStep?.id == step.id ? nil : step
+                                    }
+                                }
+                                #if os(macOS)
+                                .onHover { hovered in
+                                    withAnimation(.easeOut(duration: 0.1)) {
+                                        selectedStep = hovered ? step : nil
+                                    }
+                                }
+                                #endif
                         }
-                        #if os(macOS)
-                        .onHover { hovered in
-                            withAnimation(.easeOut(duration: 0.1)) {
-                                selectedStep = hovered ? step : nil
-                            }
-                        }
-                        #endif
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .frame(height: 72)
+            .frame(height: 88)
 
             // Tooltip / selected step info
             if let step = selectedStep {
@@ -152,18 +156,19 @@ struct IntervalChartView: View {
 private struct ZoneBlock: View {
     let step: WorkoutStep
     let width: CGFloat
+    let height: CGFloat
     let isHighlighted: Bool
 
     var body: some View {
         RoundedRectangle(cornerRadius: 3)
-            .fill(step.zoneColor.opacity(isHighlighted ? 1.0 : 0.80))
-            .frame(width: width)
+            .fill(step.zoneColor.opacity(isHighlighted ? 1.0 : 0.82))
+            .frame(width: width, height: height)
             .overlay(
                 isHighlighted
-                    ? RoundedRectangle(cornerRadius: 3).stroke(.white.opacity(0.35), lineWidth: 1.5)
+                    ? RoundedRectangle(cornerRadius: 3).stroke(.white.opacity(0.4), lineWidth: 1.5)
                     : nil
             )
-            .scaleEffect(y: isHighlighted ? 1.06 : 1.0, anchor: .bottom)
+            .scaleEffect(y: isHighlighted ? 1.08 : 1.0, anchor: .bottom)
             .animation(.easeOut(duration: 0.1), value: isHighlighted)
     }
 }
