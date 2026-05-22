@@ -121,6 +121,9 @@ struct CreateWorkoutView: View {
                 }
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 620, minHeight: 680)
+        #endif
         .sheet(isPresented: $showStepEditor) {
             let existing = editingStepID.flatMap { id in steps.first(where: { $0.id == id }) }
             StepEditorSheet(draft: existing ?? DraftStep(), isNew: existing == nil) { saved in
