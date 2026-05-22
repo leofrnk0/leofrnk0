@@ -92,11 +92,11 @@ enum PowerZone: String, Codable, CaseIterable, Hashable {
 
     var color: Color {
         switch self {
-        case .z1: Color(white: 0.40)
-        case .z2: Color(red: 0.231, green: 0.510, blue: 0.965)
-        case .z3: Color(red: 0.133, green: 0.773, blue: 0.369)
-        case .z4: Color(red: 0.918, green: 0.702, blue: 0.031)
-        case .z5: Color(red: 0.976, green: 0.451, blue: 0.086)
+        case .z1: Color(white: 0.50)
+        case .z2: Color(red: 0.20, green: 0.55, blue: 1.00)
+        case .z3: Color(red: 0.15, green: 0.82, blue: 0.35)
+        case .z4: Color(red: 1.00, green: 0.55, blue: 0.00)
+        case .z5: Color(red: 0.95, green: 0.18, blue: 0.18)
         }
     }
 
