@@ -4,6 +4,7 @@ struct LibraryView: View {
     @Environment(WorkoutStore.self) private var store
     @Binding var selectedWorkout: Workout?
     @State private var showFilter = false
+    @State private var showCreate = false
 
     var body: some View {
         @Bindable var store = store
@@ -25,14 +26,18 @@ struct LibraryView: View {
         .navigationTitle("TriWorkouts")
         .toolbar {
             #if os(iOS)
-            ToolbarItem(placement: .navigationBarTrailing) {
-                filterButton
-            }
+            ToolbarItem(placement: .navigationBarLeading) { createButton }
+            ToolbarItem(placement: .navigationBarTrailing) { filterButton }
+            #else
+            ToolbarItem(placement: .primaryAction) { createButton }
             #endif
         }
         .sheet(isPresented: $showFilter) {
             FilterView()
                 .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showCreate) {
+            CreateWorkoutView()
         }
     }
 
@@ -66,8 +71,28 @@ struct LibraryView: View {
                     selectedWorkout = workout
                 } label: {
                     WorkoutCard(workout: workout, isSelected: selectedWorkout?.id == workout.id)
+                        .overlay(alignment: .topLeading) {
+                            if store.isUserWorkout(workout) {
+                                Text("Eigenes")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 6).padding(.vertical, 2)
+                                    .background(Color.purple, in: Capsule())
+                                    .padding(.top, 10).padding(.leading, 10)
+                            }
+                        }
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    if store.isUserWorkout(workout) {
+                        Button(role: .destructive) {
+                            if selectedWorkout?.id == workout.id { selectedWorkout = nil }
+                            store.deleteWorkout(workout)
+                        } label: {
+                            Label("Workout löschen", systemImage: "trash")
+                        }
+                    }
+                }
             }
         }
     }
@@ -86,6 +111,12 @@ struct LibraryView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
+    }
+
+    private var createButton: some View {
+        Button { showCreate = true } label: {
+            Image(systemName: "plus")
+        }
     }
 
     private var filterButton: some View {
