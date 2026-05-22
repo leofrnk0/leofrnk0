@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Draft step model
+// MARK: - Draft models
 
 private struct DraftStep: Identifiable {
     let id: String
@@ -43,7 +43,26 @@ private struct DraftStep: Identifiable {
     }
 }
 
-// MARK: - Main view
+private enum DraftItem: Identifiable {
+    case step(DraftStep)
+    case repeatBlock(id: String, count: Int, steps: [DraftStep])
+
+    var id: String {
+        switch self {
+        case .step(let s):                   return s.id
+        case .repeatBlock(let id, _, _): return id
+        }
+    }
+
+    var totalDurationSeconds: Int {
+        switch self {
+        case .step(let s):                       return s.durationSeconds
+        case .repeatBlock(_, let c, let ss): return ss.reduce(0) { $0 + $1.durationSeconds } * c
+        }
+    }
+}
+
+// MARK: - Main create view
 
 struct CreateWorkoutView: View {
     @Environment(WorkoutStore.self) private var store
@@ -54,18 +73,36 @@ struct CreateWorkoutView: View {
     @State private var selectedTags: Set<WorkoutTag> = []
     @State private var authorName = ""
     @State private var workoutDescription = ""
-    @State private var steps: [DraftStep] = []
-    @State private var editingStepID: String? = nil
+    @State private var items: [DraftItem] = []
+
+    @State private var editingItemID: String? = nil
     @State private var showStepEditor = false
+    @State private var showRepeatEditor = false
 
-    // MARK: Computed metrics
+    // MARK: Computed
 
-    private var totalSeconds: Int { steps.reduce(0) { $0 + $1.durationSeconds } }
+    private var totalSeconds: Int { items.reduce(0) { $0 + $1.totalDurationSeconds } }
+
+    private var flattenedSteps: [WorkoutStep] {
+        var result: [WorkoutStep] = []
+        var idx = 0
+        for item in items {
+            switch item {
+            case .step(let s):
+                result.append(s.toWorkoutStep(index: idx)); idx += 1
+            case .repeatBlock(_, let c, let ss):
+                for _ in 0..<c { for s in ss { result.append(s.toWorkoutStep(index: idx)); idx += 1 } }
+            }
+        }
+        return result
+    }
 
     private var computedIF: Double {
         let total = Double(totalSeconds)
         guard total > 0 else { return 0.0 }
-        let w = steps.reduce(0.0) { $0 + ($1.zone?.ifValue ?? $1.intensity.baseIF) * Double($1.durationSeconds) }
+        let w = flattenedSteps.reduce(0.0) {
+            $0 + ($1.zone?.ifValue ?? $1.intensity.baseIF) * Double($1.durationSeconds)
+        }
         return (w / total * 100).rounded() / 100
     }
 
@@ -73,16 +110,12 @@ struct CreateWorkoutView: View {
         Int((Double(totalSeconds) / 3600 * computedIF * computedIF * 100).rounded())
     }
 
-    private var previewSteps: [WorkoutStep] {
-        steps.enumerated().map { $1.toWorkoutStep(index: $0) }
-    }
-
-    private var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty && !steps.isEmpty }
-
     private var formattedTotal: String {
         let m = totalSeconds / 60
         return m >= 60 ? "\(m/60)h \(m%60)min" : "\(m) min"
     }
+
+    private var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty && !items.isEmpty }
 
     // MARK: Body
 
@@ -95,30 +128,47 @@ struct CreateWorkoutView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Abbrechen") { dismiss() }
-                    }
+                    ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Speichern") { save() }
-                            .fontWeight(.semibold)
-                            .disabled(!isValid)
+                            .fontWeight(.semibold).disabled(!isValid)
                     }
                 }
         }
         #if os(macOS)
         .frame(minWidth: 720, minHeight: 580)
         #endif
+        // Single step editor
         .sheet(isPresented: $showStepEditor) {
-            let existing = editingStepID.flatMap { id in steps.first { $0.id == id } }
-            StepEditorSheet(draft: existing ?? DraftStep(), isNew: existing == nil) { saved in
-                if let id = editingStepID, let idx = steps.firstIndex(where: { $0.id == id }) {
-                    steps[idx] = saved
-                } else {
-                    steps.append(saved)
-                }
-                editingStepID = nil
+            StepEditorSheet(draft: existingStep() ?? DraftStep(), isNew: existingStep() == nil) { saved in
+                if let id = editingItemID, let idx = items.firstIndex(where: { $0.id == id }) {
+                    items[idx] = .step(saved)
+                } else { items.append(.step(saved)) }
+                editingItemID = nil
             }
         }
+        // Repeat block editor
+        .sheet(isPresented: $showRepeatEditor) {
+            let block = existingBlock()
+            RepeatBlockEditorSheet(count: block?.count ?? 3, steps: block?.steps ?? [], isNew: block == nil) { count, steps in
+                if let id = editingItemID, let idx = items.firstIndex(where: { $0.id == id }) {
+                    items[idx] = .repeatBlock(id: id, count: count, steps: steps)
+                } else { items.append(.repeatBlock(id: UUID().uuidString, count: count, steps: steps)) }
+                editingItemID = nil
+            }
+        }
+    }
+
+    private func existingStep() -> DraftStep? {
+        guard let id = editingItemID,
+              case .step(let s) = items.first(where: { $0.id == id }) else { return nil }
+        return s
+    }
+
+    private func existingBlock() -> (count: Int, steps: [DraftStep])? {
+        guard let id = editingItemID,
+              case .repeatBlock(_, let c, let ss) = items.first(where: { $0.id == id }) else { return nil }
+        return (c, ss)
     }
 
     // MARK: Layout
@@ -127,30 +177,20 @@ struct CreateWorkoutView: View {
     private var mainContent: some View {
         #if os(macOS)
         HStack(spacing: 0) {
-            // Left column: metadata
             ScrollView {
-                VStack(spacing: 14) {
-                    nameField
-                    sportPicker
-                    tagSection
-                    Divider().background(Color.appBorder)
-                    detailsFields
-                }
-                .padding(20)
+                VStack(spacing: 14) { nameField; sportPicker; tagSection; Divider(); detailsFields }
+                    .padding(20)
             }
             .frame(width: 280)
             .background(Color.appCard)
 
             Divider()
 
-            // Right column: steps + preview + metrics
             ScrollView {
                 VStack(spacing: 14) {
+                    if !items.isEmpty { previewCard }
                     stepsSection
-                    if !steps.isEmpty {
-                        previewCard
-                        metricsRow
-                    }
+                    if !items.isEmpty { metricsRow }
                 }
                 .padding(20)
             }
@@ -159,14 +199,10 @@ struct CreateWorkoutView: View {
         #else
         ScrollView {
             VStack(spacing: 14) {
-                nameField
-                sportPicker
-                tagSection
+                nameField; sportPicker; tagSection
+                if !items.isEmpty { previewCard }
                 stepsSection
-                if !steps.isEmpty {
-                    previewCard
-                    metricsRow
-                }
+                if !items.isEmpty { metricsRow }
                 detailsFields
             }
             .padding(16)
@@ -174,25 +210,16 @@ struct CreateWorkoutView: View {
         #endif
     }
 
-    // MARK: - Name field
+    // MARK: - Sub-views
 
     private var nameField: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("Name", systemImage: "pencil")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
-            TextField("Workout-Name", text: $name)
-                .font(.title3.weight(.semibold))
-                .padding(14)
-                .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(name.isEmpty ? Color.appBorder : sport.color.opacity(0.6), lineWidth: 1.5)
-                )
-        }
+        TextField("Workout-Name", text: $name)
+            .font(.title3.weight(.semibold))
+            .padding(14)
+            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12)
+                .stroke(name.isEmpty ? Color.appBorder : sport.color.opacity(0.6), lineWidth: 1.5))
     }
-
-    // MARK: - Sport picker
 
     private var sportPicker: some View {
         HStack(spacing: 8) {
@@ -203,25 +230,17 @@ struct CreateWorkoutView: View {
                         Text(s.displayName).font(.caption.weight(.semibold))
                     }
                     .foregroundStyle(sport == s ? .white : s.color)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        sport == s ? s.color : s.color.opacity(0.12),
-                        in: RoundedRectangle(cornerRadius: 12)
-                    )
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .background(sport == s ? s.color : s.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
             }
         }
     }
 
-    // MARK: - Tags
-
     private var tagSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Tags", systemImage: "tag")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            Label("Tags", systemImage: "tag").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 86), spacing: 7)], spacing: 7) {
                 ForEach(WorkoutTag.allCases, id: \.self) { tag in
                     let on = selectedTags.contains(tag)
@@ -244,84 +263,79 @@ struct CreateWorkoutView: View {
         }
     }
 
-    // MARK: - Steps
+    private var previewCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Vorschau", systemImage: "waveform.path.ecg")
+                .font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+            IntervalChartView(steps: flattenedSteps, totalDuration: totalSeconds)
+        }
+        .padding(14)
+        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder))
+    }
 
     private var stepsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("Schritte (\(steps.count))", systemImage: "list.bullet.rectangle")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                Label("Schritte (\(items.count))", systemImage: "list.bullet.rectangle")
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
-                Button {
-                    editingStepID = nil
-                    showStepEditor = true
-                } label: {
-                    Label("Hinzufügen", systemImage: "plus.circle.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.orange)
+                addMenu
+            }
+
+            if items.isEmpty {
+                Button { editingItemID = nil; showStepEditor = true } label: {
+                    VStack(spacing: 12) {
+                        Image(systemName: "plus.circle").font(.system(size: 36)).foregroundStyle(.tertiary)
+                        Text("Ersten Schritt hinzufügen").font(.subheadline.weight(.medium)).foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 32)
+                    .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [7]))
+                        .foregroundStyle(Color.appBorder))
                 }
                 .buttonStyle(.plain)
-            }
-
-            if steps.isEmpty {
-                emptyStepsPlaceholder
             } else {
-                stepList
-            }
-        }
-    }
-
-    private var emptyStepsPlaceholder: some View {
-        Button {
-            editingStepID = nil
-            showStepEditor = true
-        } label: {
-            VStack(spacing: 12) {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 36))
-                    .foregroundStyle(.tertiary)
-                Text("Ersten Schritt hinzufügen")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.tertiary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 32)
-            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [7]))
-                    .foregroundStyle(Color.appBorder)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var stepList: some View {
-        List {
-            ForEach(steps) { step in
-                StepCardRow(step: step) {
-                    editingStepID = step.id
-                    showStepEditor = true
+                List {
+                    ForEach(items) { item in
+                        itemRow(item)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 3, leading: 0, bottom: 3, trailing: 0))
+                    }
+                    .onMove { items.move(fromOffsets: $0, toOffset: $1) }
+                    .onDelete { items.remove(atOffsets: $0) }
                 }
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 3, leading: 0, bottom: 3, trailing: 0))
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .scrollDisabled(true)
+                #if os(iOS)
+                .environment(\.editMode, .constant(.active))
+                #endif
+                .frame(height: CGFloat(items.count) * rowHeight + 4)
+                .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
             }
-            .onMove { steps.move(fromOffsets: $0, toOffset: $1) }
-            .onDelete { steps.remove(atOffsets: $0) }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .scrollDisabled(true)
-        #if os(iOS)
-        // Always show drag handles without needing to tap Edit
-        .environment(\.editMode, .constant(.active))
-        #endif
-        .frame(height: CGFloat(steps.count) * stepRowHeight + 4)
     }
 
-    private var stepRowHeight: CGFloat {
+    @ViewBuilder
+    private func itemRow(_ item: DraftItem) -> some View {
+        switch item {
+        case .step(let step):
+            StepCardRow(step: step) {
+                editingItemID = item.id
+                showStepEditor = true
+            }
+        case .repeatBlock(_, let count, let steps):
+            RepeatBlockRow(count: count, steps: steps) {
+                editingItemID = item.id
+                showRepeatEditor = true
+            }
+        }
+    }
+
+    private var rowHeight: CGFloat {
         #if os(macOS)
         return 46
         #else
@@ -329,21 +343,21 @@ struct CreateWorkoutView: View {
         #endif
     }
 
-    // MARK: - Preview chart
-
-    private var previewCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Vorschau", systemImage: "waveform.path.ecg")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
-            IntervalChartView(steps: previewSteps, totalDuration: totalSeconds)
+    private var addMenu: some View {
+        Menu {
+            Button { editingItemID = nil; showStepEditor = true } label: {
+                Label("Einzelner Schritt", systemImage: "plus.circle")
+            }
+            Button { editingItemID = nil; showRepeatEditor = true } label: {
+                Label("Wiederholungsblock", systemImage: "repeat")
+            }
+        } label: {
+            Label("Hinzufügen", systemImage: "plus.circle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
         }
-        .padding(14)
-        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder))
+        .menuStyle(.borderlessButton)
     }
-
-    // MARK: - Metrics row
 
     private var metricsRow: some View {
         HStack(spacing: 8) {
@@ -353,23 +367,17 @@ struct CreateWorkoutView: View {
         }
     }
 
-    // MARK: - Details
-
     private var detailsFields: some View {
         VStack(spacing: 10) {
             Label("Details", systemImage: "info.circle")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+                .font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-
             TextField("Autor", text: $authorName)
                 .padding(12)
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder))
-
             TextField("Beschreibung (optional)", text: $workoutDescription, axis: .vertical)
-                .lineLimit(3...6)
-                .padding(12)
+                .lineLimit(3...6).padding(12)
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder))
         }
@@ -378,67 +386,103 @@ struct CreateWorkoutView: View {
     // MARK: - Save
 
     private func save() {
-        let workoutSteps = steps.enumerated().map { $1.toWorkoutStep(index: $0) }
-        let total = workoutSteps.reduce(0) { $0 + $1.durationSeconds }
+        let steps = flattenedSteps
+        let indexed = steps.enumerated().map { idx, s in
+            WorkoutStep(id: idx, intensity: s.intensity, durationSeconds: s.durationSeconds,
+                        targetType: s.targetType, zone: s.zone, targetZoneNumber: nil,
+                        powerLowPercent: nil, powerHighPercent: nil, description: s.description, repeatCount: nil)
+        }
+        let total = indexed.reduce(0) { $0 + $1.durationSeconds }
         store.addWorkout(Workout(
             id: "user-\(UUID().uuidString)",
             name: name.trimmingCharacters(in: .whitespaces),
-            sport: sport,
-            tags: Array(selectedTags),
-            totalDurationSeconds: total,
-            tss: computedTSS,
-            intensityFactor: computedIF,
+            sport: sport, tags: Array(selectedTags),
+            totalDurationSeconds: total, tss: computedTSS, intensityFactor: computedIF,
             description: workoutDescription.isEmpty ? name : workoutDescription,
             author: authorName.isEmpty ? "Eigenes Workout" : authorName,
-            steps: workoutSteps,
-            source: nil
+            steps: indexed, source: nil
         ))
         dismiss()
     }
 }
 
-// MARK: - Step card row (used inside List)
+// MARK: - Step card row
 
 private struct StepCardRow: View {
-    let step: DraftStep
-    let onTap: () -> Void
-
+    let step: DraftStep; let onTap: () -> Void
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 0) {
-                // Zone color stripe
                 RoundedRectangle(cornerRadius: 2)
                     .fill(step.zone?.color ?? step.intensityColor)
-                    .frame(width: 4)
-                    .padding(.vertical, 6)
-
+                    .frame(width: 4).padding(.vertical, 6)
                 HStack(spacing: 10) {
-                    // Intensity badge
                     Text(step.intensity.displayName)
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(step.intensityColor)
+                        .font(.caption2.weight(.bold)).foregroundStyle(step.intensityColor)
                         .padding(.horizontal, 6).padding(.vertical, 3)
                         .background(step.intensityColor.opacity(0.15), in: Capsule())
-
-                    // Zone label
                     if let zone = step.zone {
-                        Text("\(zone.rawValue) · \(zone.name)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                        Text("\(zone.rawValue) · \(zone.name)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     } else {
                         Text("Offen").font(.caption).foregroundStyle(.tertiary)
                     }
+                    Spacer(minLength: 4)
+                    Text(step.formattedDuration)
+                        .font(.system(.callout, design: .monospaced).weight(.semibold)).foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 12).padding(.vertical, 10)
+            }
+            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Repeat block row
+
+private struct RepeatBlockRow: View {
+    let count: Int; let steps: [DraftStep]; let onTap: () -> Void
+    private var total: Int { steps.reduce(0) { $0 + $1.durationSeconds } * count }
+    private var formattedTotal: String {
+        let m = total / 60; return m >= 60 ? "\(m/60)h \(m%60)min" : "\(m) min"
+    }
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 0) {
+                // Multi-zone stripe
+                VStack(spacing: 1) {
+                    ForEach(steps) { s in
+                        Rectangle().fill(s.zone?.color ?? s.intensityColor)
+                    }
+                }
+                .frame(width: 4)
+                .clipShape(RoundedRectangle(cornerRadius: 2))
+                .padding(.vertical, 6)
+
+                HStack(spacing: 8) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5).fill(Color.appElevated)
+                        Text("\(count)×").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                    }
+                    .frame(width: 34, height: 22)
+
+                    HStack(spacing: 4) {
+                        ForEach(Array(steps.enumerated()), id: \.offset) { idx, s in
+                            HStack(spacing: 3) {
+                                Circle().fill(s.zone?.color ?? s.intensityColor).frame(width: 6, height: 6)
+                                Text(s.formattedDuration).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                            }
+                            if idx < steps.count - 1 {
+                                Text("+").font(.caption2).foregroundStyle(.quaternary)
+                            }
+                        }
+                    }
 
                     Spacer(minLength: 4)
-
-                    // Duration
-                    Text(step.formattedDuration)
-                        .font(.system(.callout, design: .monospaced).weight(.semibold))
-                        .foregroundStyle(.primary)
+                    Text(formattedTotal)
+                        .font(.system(.callout, design: .monospaced).weight(.semibold)).foregroundStyle(.primary)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 12).padding(.vertical, 10)
             }
             .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
         }
@@ -450,101 +494,107 @@ private struct StepCardRow: View {
 
 private struct MetricPill: View {
     let value: String; let label: String; let color: Color
-
     var body: some View {
         VStack(spacing: 3) {
-            Text(value)
-                .font(.system(.callout, design: .monospaced).weight(.bold))
+            Text(value).font(.system(.callout, design: .monospaced).weight(.bold))
                 .foregroundStyle(color == .secondary ? .primary : color)
-            Text(label)
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(.tertiary)
+            Text(label).font(.caption2.weight(.medium)).foregroundStyle(.tertiary)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity).padding(.vertical, 10)
         .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder))
     }
 }
 
-// MARK: - Step editor sheet
+// MARK: - Step editor sheet (redesigned, no Form)
 
-private struct StepEditorSheet: View {
+struct StepEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: DraftStep
     let isNew: Bool
     let onSave: (DraftStep) -> Void
 
     init(draft: DraftStep, isNew: Bool, onSave: @escaping (DraftStep) -> Void) {
-        _draft = State(initialValue: draft)
-        self.isNew = isNew
-        self.onSave = onSave
+        _draft = State(initialValue: draft); self.isNew = isNew; self.onSave = onSave
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Intensität") {
-                    Picker("", selection: $draft.intensity) {
-                        ForEach([StepIntensity.warmup, .work, .rest, .cooldown], id: \.self) {
-                            Text($0.displayName).tag($0)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                }
-
-                Section("Dauer") {
-                    Stepper(value: $draft.minutes, in: 0...180) {
-                        LabeledContent("Minuten") {
-                            Text("\(draft.minutes)").font(.callout.monospacedDigit()).foregroundStyle(.secondary)
-                        }
-                    }
-                    Stepper(value: $draft.seconds, in: 0...55, step: 5) {
-                        LabeledContent("Sekunden") {
-                            Text("\(draft.seconds)").font(.callout.monospacedDigit()).foregroundStyle(.secondary)
-                        }
-                    }
-                }
-
-                Section("Zone (optional)") {
-                    Button {
-                        draft.zone = nil
-                    } label: {
-                        HStack {
-                            Text("Keine Zone").foregroundStyle(.primary)
-                            Spacer()
-                            if draft.zone == nil {
-                                Image(systemName: "checkmark").foregroundStyle(.secondary).fontWeight(.semibold)
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Intensity
+                    editorSection("Intensität", icon: "bolt") {
+                        HStack(spacing: 8) {
+                            ForEach([StepIntensity.warmup, .work, .rest, .cooldown], id: \.self) { i in
+                                let on = draft.intensity == i
+                                let c = intensityColor(i)
+                                Button { withAnimation(.easeOut(duration: 0.15)) { draft.intensity = i } } label: {
+                                    VStack(spacing: 5) {
+                                        Image(systemName: intensityIcon(i)).font(.title3)
+                                        Text(i.displayName).font(.caption.weight(.semibold))
+                                    }
+                                    .foregroundStyle(on ? .white : c)
+                                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                    .background(on ? c : c.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
-                    .buttonStyle(.plain)
 
-                    ForEach(PowerZone.allCases, id: \.self) { zone in
-                        Button { draft.zone = zone } label: {
-                            HStack(spacing: 10) {
-                                Circle().fill(zone.color).frame(width: 10, height: 10)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text("\(zone.rawValue) · \(zone.name)").foregroundStyle(.primary)
-                                    Text(zone.ftpRange).font(.caption2).foregroundStyle(.tertiary)
+                    // Duration
+                    editorSection("Dauer", icon: "clock") {
+                        HStack(spacing: 12) {
+                            DurationSpinner(value: $draft.minutes, label: "min", range: 0...180, step: 1)
+                            DurationSpinner(value: $draft.seconds, label: "sek", range: 0...55, step: 5)
+                        }
+                    }
+
+                    // Zone
+                    editorSection("Zone", icon: "gauge.medium") {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                            // "Keine Zone" tile
+                            let noZoneOn = draft.zone == nil
+                            Button { draft.zone = nil } label: {
+                                VStack(spacing: 4) {
+                                    Image(systemName: "minus.circle").font(.body)
+                                    Text("Offen").font(.caption.weight(.semibold))
                                 }
-                                Spacer()
-                                if draft.zone == zone {
-                                    Image(systemName: "checkmark").foregroundStyle(zone.color).fontWeight(.semibold)
+                                .foregroundStyle(noZoneOn ? .white : .secondary)
+                                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                .background(noZoneOn ? Color(white: 0.3) : Color.appElevated, in: RoundedRectangle(cornerRadius: 10))
+                            }
+                            .buttonStyle(.plain)
+                            .animation(.easeOut(duration: 0.1), value: draft.zone == nil)
+
+                            ForEach(PowerZone.allCases, id: \.self) { zone in
+                                let on = draft.zone == zone
+                                Button { draft.zone = zone } label: {
+                                    VStack(spacing: 4) {
+                                        Circle().fill(zone.color).frame(width: 10, height: 10)
+                                        Text(zone.rawValue).font(.caption.weight(.bold))
+                                        Text(zone.name).font(.caption2).lineLimit(1)
+                                    }
+                                    .foregroundStyle(on ? .white : zone.color)
+                                    .frame(maxWidth: .infinity).padding(.vertical, 10)
+                                    .background(on ? zone.color : zone.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
                                 }
+                                .buttonStyle(.plain)
+                                .animation(.easeOut(duration: 0.1), value: on)
                             }
                         }
-                        .buttonStyle(.plain)
+                    }
+
+                    // Description
+                    editorSection("Beschreibung", icon: "text.alignleft") {
+                        TextField("Optional", text: $draft.stepDescription, axis: .vertical)
+                            .lineLimit(2...4).padding(12)
+                            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder))
                     }
                 }
-
-                Section("Beschreibung") {
-                    TextField("Optional", text: $draft.stepDescription, axis: .vertical)
-                        .lineLimit(2...4)
-                }
+                .padding(20)
             }
-            .scrollContentBackground(.hidden)
             .background(Color.appBackground)
             .navigationTitle(isNew ? "Schritt hinzufügen" : "Schritt bearbeiten")
             #if os(iOS)
@@ -554,10 +604,223 @@ private struct StepEditorSheet: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fertig") { onSave(draft); dismiss() }
-                        .fontWeight(.semibold)
-                        .disabled(draft.durationSeconds <= 0)
+                        .fontWeight(.semibold).disabled(draft.durationSeconds <= 0)
                 }
             }
         }
+    }
+
+    private func editorSection<Content: View>(_ title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: icon).font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+            content()
+        }
+    }
+
+    private func intensityColor(_ i: StepIntensity) -> Color {
+        switch i { case .warmup: .blue; case .work: .orange; case .rest: Color(white: 0.5); case .cooldown: .cyan }
+    }
+    private func intensityIcon(_ i: StepIntensity) -> String {
+        switch i { case .warmup: "sun.horizon.fill"; case .work: "bolt.fill"; case .rest: "pause.circle.fill"; case .cooldown: "wind" }
+    }
+}
+
+// MARK: - Repeat block editor sheet
+
+struct RepeatBlockEditorSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var count: Int
+    @State private var innerSteps: [DraftStep]
+    let isNew: Bool
+    let onSave: (Int, [DraftStep]) -> Void
+
+    @State private var editingInnerID: String? = nil
+    @State private var showInnerEditor = false
+
+    init(count: Int = 3, steps: [DraftStep] = [], isNew: Bool, onSave: @escaping (Int, [DraftStep]) -> Void) {
+        _count = State(initialValue: max(2, count))
+        _innerSteps = State(initialValue: steps)
+        self.isNew = isNew; self.onSave = onSave
+    }
+
+    private var roundTotal: Int { innerSteps.reduce(0) { $0 + $1.durationSeconds } }
+    private var blockTotal: Int { roundTotal * count }
+    private func fmt(_ s: Int) -> String {
+        let m = s / 60; return m >= 60 ? "\(m/60)h \(m%60)min" : "\(m) min"
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Count spinner
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("Wiederholungen", systemImage: "repeat")
+                            .font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                        HStack(spacing: 24) {
+                            Button { count = max(2, count - 1) } label: {
+                                Image(systemName: "minus.circle.fill").font(.largeTitle).foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            Text("\(count)×")
+                                .font(.system(size: 48, weight: .bold, design: .monospaced))
+                                .frame(maxWidth: .infinity)
+                            Button { count = min(30, count + 1) } label: {
+                                Image(systemName: "plus.circle.fill").font(.largeTitle).foregroundStyle(.orange)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(20)
+                        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 14))
+                    }
+
+                    // Inner steps
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Label("Schritte pro Runde (\(innerSteps.count))", systemImage: "arrow.triangle.2.circlepath")
+                                .font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                            Spacer()
+                            Button { editingInnerID = nil; showInnerEditor = true } label: {
+                                Label("Hinzufügen", systemImage: "plus.circle.fill")
+                                    .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if innerSteps.isEmpty {
+                            Button { showInnerEditor = true } label: {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "plus.circle").font(.title2).foregroundStyle(.tertiary)
+                                    Text("Schritt hinzufügen").font(.caption).foregroundStyle(.tertiary)
+                                }
+                                .frame(maxWidth: .infinity).padding(.vertical, 20)
+                                .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
+                                .overlay(RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6]))
+                                    .foregroundStyle(Color.appBorder))
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            VStack(spacing: 2) {
+                                ForEach(innerSteps) { step in
+                                    InnerStepRow(step: step) {
+                                        editingInnerID = step.id; showInnerEditor = true
+                                    } onDelete: {
+                                        innerSteps.removeAll { $0.id == step.id }
+                                    }
+                                    if step.id != innerSteps.last?.id {
+                                        Divider().background(Color.appBorder).padding(.leading, 16)
+                                    }
+                                }
+                            }
+                            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+
+                    // Summary
+                    if !innerSteps.isEmpty {
+                        HStack(spacing: 12) {
+                            VStack(spacing: 3) {
+                                Text(fmt(roundTotal)).font(.callout.monospacedDigit().weight(.bold))
+                                Text("pro Runde").font(.caption2).foregroundStyle(.tertiary)
+                            }
+                            .frame(maxWidth: .infinity).padding(.vertical, 10)
+                            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
+
+                            VStack(spacing: 3) {
+                                Text(fmt(blockTotal)).font(.callout.monospacedDigit().weight(.bold)).foregroundStyle(.orange)
+                                Text("Gesamt").font(.caption2).foregroundStyle(.tertiary)
+                            }
+                            .frame(maxWidth: .infinity).padding(.vertical, 10)
+                            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
+                        }
+                    }
+                }
+                .padding(20)
+            }
+            .background(Color.appBackground)
+            .navigationTitle(isNew ? "Wiederholungsblock" : "Block bearbeiten")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fertig") { onSave(count, innerSteps); dismiss() }
+                        .fontWeight(.semibold).disabled(innerSteps.isEmpty)
+                }
+            }
+        }
+        .sheet(isPresented: $showInnerEditor) {
+            let existing = editingInnerID.flatMap { id in innerSteps.first { $0.id == id } }
+            StepEditorSheet(draft: existing ?? DraftStep(), isNew: existing == nil) { saved in
+                if let id = editingInnerID, let idx = innerSteps.firstIndex(where: { $0.id == id }) {
+                    innerSteps[idx] = saved
+                } else { innerSteps.append(saved) }
+                editingInnerID = nil
+            }
+        }
+    }
+}
+
+// MARK: - Inner step row (used in RepeatBlockEditorSheet)
+
+private struct InnerStepRow: View {
+    let step: DraftStep; let onTap: () -> Void; let onDelete: () -> Void
+    var body: some View {
+        HStack(spacing: 0) {
+            Rectangle().fill(step.zone?.color ?? step.intensityColor).frame(width: 3).padding(.vertical, 4)
+            HStack(spacing: 8) {
+                Text(step.intensity.displayName)
+                    .font(.caption2.weight(.bold)).foregroundStyle(step.intensityColor)
+                    .padding(.horizontal, 5).padding(.vertical, 2)
+                    .background(step.intensityColor.opacity(0.14), in: Capsule())
+                if let z = step.zone { Text("\(z.rawValue)").font(.caption).foregroundStyle(.secondary) }
+                Spacer()
+                Text(step.formattedDuration).font(.system(.callout, design: .monospaced).weight(.medium))
+                Button(action: onDelete) {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(Color(white: 0.4))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 10)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { onTap() }
+    }
+}
+
+// MARK: - Duration spinner
+
+private struct DurationSpinner: View {
+    @Binding var value: Int
+    let label: String
+    let range: ClosedRange<Int>
+    let step: Int
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Button { value = min(range.upperBound, value + step) } label: {
+                Image(systemName: "chevron.up.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(value < range.upperBound ? .orange : Color.appBorder)
+            }
+            .buttonStyle(.plain)
+
+            Text("\(value)")
+                .font(.system(size: 40, weight: .bold, design: .monospaced))
+                .frame(minWidth: 72, alignment: .center)
+
+            Button { value = max(range.lowerBound, value - step) } label: {
+                Image(systemName: "chevron.down.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(value > range.lowerBound ? .secondary : Color.appBorder)
+            }
+            .buttonStyle(.plain)
+
+            Text(label).font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 16)
+        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 14))
     }
 }
