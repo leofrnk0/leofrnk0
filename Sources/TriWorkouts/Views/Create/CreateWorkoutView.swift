@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Draft models
 
-private struct DraftStep: Identifiable {
+fileprivate struct DraftStep: Identifiable {
     let id: String
     var intensity: StepIntensity
     var minutes: Int
@@ -43,7 +43,7 @@ private struct DraftStep: Identifiable {
     }
 }
 
-private enum DraftItem: Identifiable {
+fileprivate enum DraftItem: Identifiable {
     case step(DraftStep)
     case repeatBlock(id: String, count: Int, steps: [DraftStep])
 
