@@ -3,26 +3,52 @@ import Observation
 
 @Observable
 final class WorkoutStore {
-    var workouts: [Workout] = []
+    private var bundleWorkouts: [Workout] = []
+    private(set) var userWorkouts: [Workout] = []
     var searchText: String = ""
     var selectedSports: Set<Sport> = []
     var selectedTags: Set<WorkoutTag> = []
 
-    init() { loadWorkouts() }
+    private let userDefaultsKey = "userWorkouts_v1"
+
+    init() {
+        loadBundleWorkouts()
+        loadUserWorkouts()
+    }
+
+    // MARK: - Combined list (user workouts first)
+
+    var workouts: [Workout] { userWorkouts + bundleWorkouts }
 
     var filteredWorkouts: [Workout] {
         workouts.filter { w in
-            let sport   = selectedSports.isEmpty || selectedSports.contains(w.sport)
-            let tags    = selectedTags.isEmpty   || w.tags.contains(where: { selectedTags.contains($0) })
-            let search  = searchText.isEmpty     || w.name.localizedCaseInsensitiveContains(searchText)
-                                                 || w.description.localizedCaseInsensitiveContains(searchText)
+            let sport  = selectedSports.isEmpty || selectedSports.contains(w.sport)
+            let tags   = selectedTags.isEmpty   || w.tags.contains(where: { selectedTags.contains($0) })
+            let search = searchText.isEmpty     || w.name.localizedCaseInsensitiveContains(searchText)
+                                                || w.description.localizedCaseInsensitiveContains(searchText)
             return sport && tags && search
         }
     }
 
-    var activeFilterCount: Int {
-        selectedSports.count + selectedTags.count
+    var activeFilterCount: Int { selectedSports.count + selectedTags.count }
+
+    // MARK: - User workout management
+
+    func addWorkout(_ workout: Workout) {
+        userWorkouts.insert(workout, at: 0)
+        saveUserWorkouts()
     }
+
+    func deleteWorkout(_ workout: Workout) {
+        userWorkouts.removeAll { $0.id == workout.id }
+        saveUserWorkouts()
+    }
+
+    func isUserWorkout(_ workout: Workout) -> Bool {
+        userWorkouts.contains(where: { $0.id == workout.id })
+    }
+
+    // MARK: - Filter actions
 
     func toggleSport(_ sport: Sport) {
         if selectedSports.contains(sport) { selectedSports.remove(sport) }
@@ -40,9 +66,21 @@ final class WorkoutStore {
         searchText = ""
     }
 
-    private func loadWorkouts() {
+    // MARK: - Persistence
+
+    private func loadBundleWorkouts() {
         guard let url = Bundle.module.url(forResource: "workouts", withExtension: "json"),
               let data = try? Data(contentsOf: url) else { return }
-        workouts = (try? JSONDecoder().decode([Workout].self, from: data)) ?? []
+        bundleWorkouts = (try? JSONDecoder().decode([Workout].self, from: data)) ?? []
+    }
+
+    private func loadUserWorkouts() {
+        guard let data = UserDefaults.standard.data(forKey: userDefaultsKey) else { return }
+        userWorkouts = (try? JSONDecoder().decode([Workout].self, from: data)) ?? []
+    }
+
+    private func saveUserWorkouts() {
+        guard let data = try? JSONEncoder().encode(userWorkouts) else { return }
+        UserDefaults.standard.set(data, forKey: userDefaultsKey)
     }
 }
