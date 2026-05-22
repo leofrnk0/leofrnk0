@@ -12,7 +12,6 @@ struct WorkoutDetailView: View {
                 sportHeader
                 mainStats
                 IntervalChartView(steps: workout.steps, totalDuration: workout.totalDurationSeconds)
-                timeBreakdown
                 zoneDistribution
                 IntervalTableView(steps: workout.steps)
                 descriptionSection
@@ -296,12 +295,24 @@ struct SourceSection: View {
                         .font(.caption).foregroundStyle(.tertiary)
                 }
 
-                if let doi = source.doi {
-                    HStack(spacing: 5) {
-                        Image(systemName: "link").font(.caption2)
-                        Text("DOI: \(doi)").font(.caption.monospacedDigit())
+                if let doi = source.doi,
+                   let url = URL(string: "https://doi.org/\(doi)") {
+                    Link(destination: url) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "arrow.up.right.square").font(.caption2)
+                            Text("DOI: \(doi)").font(.caption.monospacedDigit())
+                        }
+                        .foregroundStyle(.blue.opacity(0.85))
                     }
-                    .foregroundStyle(.blue.opacity(0.85))
+                } else if let urlString = source.url,
+                          let url = URL(string: urlString) {
+                    Link(destination: url) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "arrow.up.right.square").font(.caption2)
+                            Text("Quelle öffnen").font(.caption)
+                        }
+                        .foregroundStyle(.blue.opacity(0.85))
+                    }
                 }
             }
             .padding(14)

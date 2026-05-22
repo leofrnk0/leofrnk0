@@ -4,12 +4,13 @@ import SwiftUI
 
 private enum StepGroup: Identifiable {
     case single(WorkoutStep)
-    case repeated(count: Int, pattern: [WorkoutStep], totalSeconds: Int)
+    // lastIsPartial: the final repetition omits the trailing rest step
+    case repeated(count: Int, pattern: [WorkoutStep], totalSeconds: Int, lastIsPartial: Bool)
 
     var id: String {
         switch self {
-        case .single(let s):              return "s_\(s.id)"
-        case .repeated(let c, let p, _): return "r_\(c)_\(p.first?.id ?? 0)"
+        case .single(let s):                  return "s_\(s.id)"
+        case .repeated(let c, let p, _, _):  return "r_\(c)_\(p.first?.id ?? 0)"
         }
     }
 }
@@ -21,6 +22,7 @@ private func groupSteps(_ steps: [WorkoutStep]) -> [StepGroup] {
         let remaining = steps.count - i
         var bestLen = 1
         var bestCount = 1
+        var bestHasPartial = false
 
         for len in 1...min(4, remaining) {
             let pattern = Array(steps[i..<(i + len)])
@@ -30,17 +32,30 @@ private func groupSteps(_ steps: [WorkoutStep]) -> [StepGroup] {
                 count += 1
                 j += len
             }
-            if count > 1 && count * len > bestCount * bestLen {
+            guard count >= 2 else { continue }
+
+            // Detect a partial last repetition: the first element of the pattern
+            // appears once more after all full repetitions (e.g. 5th work after 4× [work+rest])
+            let hasPartial = len > 1 && j < steps.count && stepsMatch([steps[j]], [pattern[0]])
+
+            let score = count * len + (hasPartial ? 1 : 0)
+            let bestScore = bestCount * bestLen + (bestHasPartial ? 1 : 0)
+            if score > bestScore {
                 bestLen = len
                 bestCount = count
+                bestHasPartial = hasPartial
             }
         }
 
         if bestCount >= 2 {
             let pattern = Array(steps[i..<(i + bestLen)])
-            let total = pattern.reduce(0) { $0 + $1.durationSeconds } * bestCount
-            groups.append(.repeated(count: bestCount, pattern: pattern, totalSeconds: total))
-            i += bestLen * bestCount
+            let displayCount = bestHasPartial ? bestCount + 1 : bestCount
+            let fullSecs  = pattern.reduce(0) { $0 + $1.durationSeconds } * bestCount
+            let partialSecs = bestHasPartial ? pattern[0].durationSeconds : 0
+            groups.append(.repeated(count: displayCount, pattern: pattern,
+                                    totalSeconds: fullSecs + partialSecs,
+                                    lastIsPartial: bestHasPartial))
+            i += bestLen * bestCount + (bestHasPartial ? 1 : 0)
         } else {
             groups.append(.single(steps[i]))
             i += 1
@@ -78,7 +93,7 @@ struct IntervalTableView: View {
                     switch group {
                     case .single(let step):
                         StepRow(step: step, displayIndex: idx + 1)
-                    case .repeated(let count, let pattern, let total):
+                    case .repeated(let count, let pattern, let total, _):
                         RepeatGroupRow(count: count, pattern: pattern, totalSeconds: total,
                                        displayIndex: idx + 1)
                     }

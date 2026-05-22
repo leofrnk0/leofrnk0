@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - Sport
 
 enum Sport: String, Codable, CaseIterable, Hashable {
-    case cycling, running, swimming
+    case swimming, cycling, running
 
     var displayName: String {
         switch self {
@@ -116,6 +116,17 @@ enum PowerZone: String, Codable, CaseIterable, Hashable {
         }
     }
 
+    // Approximate Intensity Factor for IF/TSS calculation
+    var ifValue: Double {
+        switch self {
+        case .z1: 0.52
+        case .z2: 0.65
+        case .z3: 0.82
+        case .z4: 0.97
+        case .z5: 1.12
+        }
+    }
+
     // Relative bar height in the profile chart (0–1, bottom-anchored)
     var heightFactor: CGFloat {
         switch self {
@@ -139,6 +150,16 @@ enum StepIntensity: String, Codable {
         case .work:     0
         case .rest:     1
         case .cooldown: 3
+        }
+    }
+
+    // Approximate IF when no zone is set
+    var baseIF: Double {
+        switch self {
+        case .warmup:   0.58
+        case .work:     0.90
+        case .rest:     0.45
+        case .cooldown: 0.55
         }
     }
 
