@@ -2,18 +2,16 @@ import SwiftUI
 
 struct LibraryView: View {
     @Environment(WorkoutStore.self) private var store
+    @Binding var selectedWorkout: Workout?
     @State private var showFilter = false
-    @State private var selectedWorkout: Workout?
 
     var body: some View {
         @Bindable var store = store
 
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Stats bar
+            VStack(alignment: .leading, spacing: 20) {
                 statsBar
 
-                // Grid
                 if store.filteredWorkouts.isEmpty {
                     emptyState
                 } else {
@@ -23,7 +21,7 @@ struct LibraryView: View {
             .padding()
         }
         .background(Color.appBackground)
-        .searchable(text: $store.searchText, prompt: "Search workouts…")
+        .searchable(text: $store.searchText, prompt: "Workouts suchen…")
         .navigationTitle("TriWorkouts")
         .toolbar {
             #if os(iOS)
@@ -36,47 +34,53 @@ struct LibraryView: View {
             FilterView()
                 .presentationDetents([.medium, .large])
         }
-        .navigationDestination(item: $selectedWorkout) { workout in
-            WorkoutDetailView(workout: workout)
-        }
     }
 
+    // MARK: - Subviews
+
     private var statsBar: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             ForEach(Sport.allCases, id: \.self) { sport in
                 let count = store.filteredWorkouts.filter { $0.sport == sport }.count
                 SportStatPill(sport: sport, count: count)
             }
             Spacer()
+            Text("\(store.filteredWorkouts.count) Workouts")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
             if store.activeFilterCount > 0 {
-                Button("Clear") { store.clearFilters() }
+                Button("Zurücksetzen") { store.clearFilters() }
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.orange)
             }
         }
     }
 
     private var workoutGrid: some View {
         LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 300, maximum: 400), spacing: 16)],
-            spacing: 16
+            columns: [GridItem(.adaptive(minimum: 280, maximum: 420), spacing: 14)],
+            spacing: 14
         ) {
             ForEach(store.filteredWorkouts) { workout in
-                WorkoutCard(workout: workout)
-                    .onTapGesture { selectedWorkout = workout }
+                Button {
+                    selectedWorkout = workout
+                } label: {
+                    WorkoutCard(workout: workout, isSelected: selectedWorkout?.id == workout.id)
+                }
+                .buttonStyle(.plain)
             }
         }
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 44))
+                .font(.system(size: 40))
                 .foregroundStyle(.tertiary)
-            Text("No workouts found")
+            Text("Keine Workouts gefunden")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            Text("Try adjusting your filters or search term")
+            Text("Filter oder Suchbegriff anpassen")
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
         }
@@ -85,15 +89,11 @@ struct LibraryView: View {
     }
 
     private var filterButton: some View {
-        Button {
-            showFilter = true
-        } label: {
+        Button { showFilter = true } label: {
             Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
                 .overlay(alignment: .topTrailing) {
                     if store.activeFilterCount > 0 {
-                        Circle()
-                            .fill(Color.orange)
-                            .frame(width: 8, height: 8)
+                        Circle().fill(Color.orange).frame(width: 8, height: 8)
                             .offset(x: 2, y: -2)
                     }
                 }
@@ -101,21 +101,18 @@ struct LibraryView: View {
     }
 }
 
+// MARK: - Sport stat pill
+
 private struct SportStatPill: View {
     let sport: Sport
     let count: Int
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: sport.icon)
-                .font(.caption)
-                .foregroundStyle(sport.color)
-            Text("\(count)")
-                .font(.caption.monospacedDigit().weight(.semibold))
-                .foregroundStyle(.primary)
+        HStack(spacing: 5) {
+            Image(systemName: sport.icon).font(.caption2).foregroundStyle(sport.color)
+            Text("\(count)").font(.caption.monospacedDigit().weight(.semibold)).foregroundStyle(.primary)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 10).padding(.vertical, 5)
         .background(sport.color.opacity(0.12), in: Capsule())
     }
 }
