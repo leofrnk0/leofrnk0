@@ -512,9 +512,9 @@ fileprivate struct StepEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: DraftStep
     let isNew: Bool
-    let onSave: (DraftStep) -> Void
+    fileprivate let onSave: (DraftStep) -> Void
 
-    init(draft: DraftStep, isNew: Bool, onSave: @escaping (DraftStep) -> Void) {
+    fileprivate init(draft: DraftStep, isNew: Bool, onSave: @escaping (DraftStep) -> Void) {
         _draft = State(initialValue: draft); self.isNew = isNew; self.onSave = onSave
     }
 
@@ -632,12 +632,12 @@ fileprivate struct RepeatBlockEditorSheet: View {
     @State private var count: Int
     @State private var innerSteps: [DraftStep]
     let isNew: Bool
-    let onSave: (Int, [DraftStep]) -> Void
+    fileprivate let onSave: (Int, [DraftStep]) -> Void
 
     @State private var editingInnerID: String? = nil
     @State private var showInnerEditor = false
 
-    init(count: Int = 3, steps: [DraftStep] = [], isNew: Bool, onSave: @escaping (Int, [DraftStep]) -> Void) {
+    fileprivate init(count: Int = 3, steps: [DraftStep] = [], isNew: Bool, onSave: @escaping (Int, [DraftStep]) -> Void) {
         _count = State(initialValue: max(2, count))
         _innerSteps = State(initialValue: steps)
         self.isNew = isNew; self.onSave = onSave
