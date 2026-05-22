@@ -1,0 +1,158 @@
+import SwiftUI
+
+struct WorkoutCard: View {
+    let workout: Workout
+    @State private var isHovered = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Sport color bar
+            Rectangle()
+                .fill(workout.sport.color)
+                .frame(height: 3)
+
+            VStack(alignment: .leading, spacing: 12) {
+                // Header row
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(workout.name)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                        HStack(spacing: 6) {
+                            Image(systemName: workout.sport.icon)
+                                .font(.caption2)
+                            Text(workout.sport.displayName)
+                                .font(.caption)
+                        }
+                        .foregroundStyle(workout.sport.color)
+                    }
+                    Spacer()
+                    difficultyBadge
+                }
+
+                // Tags
+                FlowRow(items: workout.tags) { tag in
+                    TagChip(tag: tag)
+                }
+
+                Divider()
+                    .background(Color.appBorder)
+
+                // Stats row
+                HStack(spacing: 0) {
+                    StatItem(
+                        icon: "clock",
+                        value: workout.formattedDuration,
+                        label: "Duration"
+                    )
+                    Divider().frame(height: 28).background(Color.appBorder)
+                    StatItem(
+                        icon: "bolt",
+                        value: "\(workout.tss)",
+                        label: "TSS"
+                    )
+                    Divider().frame(height: 28).background(Color.appBorder)
+                    StatItem(
+                        icon: "repeat",
+                        value: "\(workout.intervalCount)",
+                        label: "Intervals"
+                    )
+                    Divider().frame(height: 28).background(Color.appBorder)
+                    StatItem(
+                        icon: "waveform.path.ecg",
+                        value: String(format: "%.2f", workout.intensityFactor),
+                        label: "IF"
+                    )
+                }
+            }
+            .padding(16)
+        }
+        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(
+                    isHovered ? workout.sport.color.opacity(0.5) : Color.appBorder,
+                    lineWidth: 1
+                )
+        )
+        .shadow(color: isHovered ? workout.sport.color.opacity(0.12) : .clear, radius: 12)
+        .scaleEffect(isHovered ? 1.01 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isHovered)
+        .onHover { isHovered = $0 }
+    }
+
+    private var difficultyBadge: some View {
+        let (color, label): (Color, String) = switch workout.tss {
+        case ..<60:    (.blue,   "Easy")
+        case 60..<85:  (.green,  "Moderate")
+        case 85..<105: (.orange, "Hard")
+        default:       (.red,    "Very Hard")
+        }
+        return Text(label)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.15), in: Capsule())
+    }
+}
+
+private struct StatItem: View {
+    let icon: String
+    let value: String
+    let label: String
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(.callout, design: .monospaced).weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct TagChip: View {
+    let tag: WorkoutTag
+
+    var body: some View {
+        Text(tag.displayName)
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(tag.color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(tag.color.opacity(0.12), in: Capsule())
+            .overlay(Capsule().stroke(tag.color.opacity(0.3), lineWidth: 0.5))
+    }
+}
+
+// Simple wrapping layout for tags
+struct FlowRow<Item: Hashable, Content: View>: View {
+    let items: [Item]
+    let content: (Item) -> Content
+
+    var body: some View {
+        var width: CGFloat = 0
+        return GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                ForEach(items, id: \.self) { item in
+                    content(item)
+                        .alignmentGuide(.leading) { d in
+                            if abs(width - d.width) > geo.size.width {
+                                width = 0
+                            }
+                            let result = width
+                            if item == items.last { width = 0 }
+                            else { width -= d.width + 6 }
+                            return result
+                        }
+                }
+            }
+        }
+        .frame(height: 22)
+    }
+}
