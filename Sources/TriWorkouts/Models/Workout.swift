@@ -78,8 +78,7 @@ enum WorkoutTag: String, Codable, CaseIterable, Hashable {
 // MARK: - PowerZone
 
 enum PowerZone: String, Codable, CaseIterable, Hashable {
-    case z1 = "Z1", z2 = "Z2", z3 = "Z3", z4 = "Z4"
-    case z5 = "Z5", z6 = "Z6", z7 = "Z7"
+    case z1 = "Z1", z2 = "Z2", z3 = "Z3", z4 = "Z4", z5 = "Z5"
 
     var name: String {
         switch self {
@@ -88,8 +87,6 @@ enum PowerZone: String, Codable, CaseIterable, Hashable {
         case .z3: "Tempo"
         case .z4: "Threshold"
         case .z5: "VO2max"
-        case .z6: "Anaerobic"
-        case .z7: "Neuromuscular"
         }
     }
 
@@ -100,20 +97,12 @@ enum PowerZone: String, Codable, CaseIterable, Hashable {
         case .z3: Color(red: 0.133, green: 0.773, blue: 0.369)
         case .z4: Color(red: 0.918, green: 0.702, blue: 0.031)
         case .z5: Color(red: 0.976, green: 0.451, blue: 0.086)
-        case .z6: Color(red: 0.937, green: 0.267, blue: 0.267)
-        case .z7: Color(red: 0.663, green: 0.333, blue: 0.969)
         }
     }
 
     var fitIndex: UInt32 {
         switch self {
-        case .z1: 1
-        case .z2: 2
-        case .z3: 3
-        case .z4: 4
-        case .z5: 5
-        case .z6: 6
-        case .z7: 7
+        case .z1: 1; case .z2: 2; case .z3: 3; case .z4: 4; case .z5: 5
         }
     }
 
@@ -123,9 +112,18 @@ enum PowerZone: String, Codable, CaseIterable, Hashable {
         case .z2: "55–75%"
         case .z3: "76–90%"
         case .z4: "91–105%"
-        case .z5: "106–120%"
-        case .z6: "121–150%"
-        case .z7: "> 150%"
+        case .z5: "> 105%"
+        }
+    }
+
+    // Relative bar height in the profile chart (0–1, bottom-anchored)
+    var heightFactor: CGFloat {
+        switch self {
+        case .z1: 0.12
+        case .z2: 0.35
+        case .z3: 0.58
+        case .z4: 0.78
+        case .z5: 1.00
         }
     }
 }
@@ -193,6 +191,17 @@ struct WorkoutStep: Codable, Identifiable {
         case .rest:     return Color(white: 0.20)
         case .cooldown: return Color(white: 0.30)
         case .work:     return .orange
+        }
+    }
+
+    // Relative bar height for the profile chart (0–1, bottom-anchored)
+    var heightFactor: CGFloat {
+        if let z = zone { return z.heightFactor }
+        switch intensity {
+        case .warmup:   return 0.22
+        case .work:     return 0.72
+        case .rest:     return 0.08
+        case .cooldown: return 0.18
         }
     }
 
