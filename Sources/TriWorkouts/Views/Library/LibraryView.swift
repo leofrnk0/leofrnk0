@@ -38,8 +38,10 @@ struct LibraryView: View {
         }
         .sheet(isPresented: $showCreate) {
             CreateWorkoutView()
+                #if os(iOS)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
+                #endif
         }
     }
 
