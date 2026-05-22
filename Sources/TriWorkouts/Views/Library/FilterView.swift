@@ -2,87 +2,110 @@ import SwiftUI
 
 struct FilterView: View {
     @Environment(WorkoutStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         @Bindable var store = store
 
         #if os(macOS)
-        filterContent
-            .frame(maxHeight: .infinity, alignment: .topLeading)
-            .background(Color.appCard)
+        macOSSidebar
         #else
-        NavigationStack {
-            filterContent
-                .navigationTitle("Filters")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") { }
-                            .font(.body.weight(.semibold))
-                    }
-                    if store.activeFilterCount > 0 {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button("Clear All") { store.clearFilters() }
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-        }
+        iOSSheet
         #endif
     }
 
-    private var filterContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Header on macOS
-                #if os(macOS)
-                HStack {
-                    Text("Library")
-                        .font(.title2.weight(.bold))
-                    Spacer()
-                    if store.activeFilterCount > 0 {
-                        Button("Clear") { store.clearFilters() }
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                #endif
+    // MARK: - macOS sidebar (always visible, no dismiss needed)
 
-                // Sport filter
-                FilterSection(title: "Sport") {
-                    ForEach(Sport.allCases, id: \.self) { sport in
-                        FilterRow(
-                            label: sport.displayName,
-                            icon: sport.icon,
-                            color: sport.color,
-                            isSelected: store.selectedSports.contains(sport)
-                        ) {
-                            store.toggleSport(sport)
-                        }
-                    }
-                }
-
-                // Tag filter
-                FilterSection(title: "Training Type") {
-                    ForEach(WorkoutTag.allCases, id: \.self) { tag in
-                        FilterRow(
-                            label: tag.displayName,
-                            icon: nil,
-                            color: tag.color,
-                            isSelected: store.selectedTags.contains(tag)
-                        ) {
-                            store.toggleTag(tag)
-                        }
-                    }
+    private var macOSSidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Bibliothek")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.primary)
+                Spacer()
+                if store.activeFilterCount > 0 {
+                    Button("Zurücksetzen") { store.clearFilters() }
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.orange)
                 }
             }
-            .padding(.bottom, 24)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
+            filterContent
+        }
+        .frame(maxHeight: .infinity, alignment: .topLeading)
+        .background(Color.appCard)
+    }
+
+    // MARK: - iOS sheet (modal, needs dismiss button)
+
+    private var iOSSheet: some View {
+        VStack(spacing: 0) {
+            // Custom sheet header
+            HStack {
+                Button("Zurücksetzen") { store.clearFilters() }
+                    .font(.callout)
+                    .foregroundStyle(store.activeFilterCount > 0 ? .orange : .clear)
+                    .disabled(store.activeFilterCount == 0)
+                    .animation(.easeOut(duration: 0.15), value: store.activeFilterCount)
+
+                Spacer()
+
+                Text("Filter")
+                    .font(.headline)
+
+                Spacer()
+
+                Button("Fertig") { dismiss() }
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(.primary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .background(Color.appCard)
+
+            Divider().background(Color.appBorder)
+
+            filterContent
         }
         .background(Color.appBackground)
     }
+
+    // MARK: - Shared filter content
+
+    private var filterContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                FilterSection(title: "Sportart") {
+                    ForEach(Sport.allCases, id: \.self) { sport in
+                        FilterToggleRow(
+                            label: sport.displayName,
+                            icon: sport.icon,
+                            color: sport.color,
+                            isOn: store.selectedSports.contains(sport)
+                        ) { store.toggleSport(sport) }
+                    }
+                }
+
+                FilterSection(title: "Trainingstyp") {
+                    ForEach(WorkoutTag.allCases, id: \.self) { tag in
+                        FilterToggleRow(
+                            label: tag.displayName,
+                            icon: nil,
+                            color: tag.color,
+                            isOn: store.selectedTags.contains(tag)
+                        ) { store.toggleTag(tag) }
+                    }
+                }
+            }
+            .padding(.bottom, 32)
+        }
+    }
 }
+
+// MARK: - Supporting views
 
 private struct FilterSection<Content: View>: View {
     let title: String
@@ -94,50 +117,50 @@ private struct FilterSection<Content: View>: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.tertiary)
                 .padding(.horizontal, 16)
-                .padding(.bottom, 4)
-            VStack(spacing: 0) {
-                content
-            }
+                .padding(.bottom, 2)
+            VStack(spacing: 0) { content }
         }
     }
 }
 
-private struct FilterRow: View {
+private struct FilterToggleRow: View {
     let label: String
     let icon: String?
     let color: Color
-    let isSelected: Bool
+    let isOn: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                if let icon {
-                    Image(systemName: icon)
-                        .font(.body)
-                        .foregroundStyle(isSelected ? color : .secondary)
-                        .frame(width: 20)
-                } else {
-                    Circle()
-                        .fill(color)
-                        .frame(width: 8, height: 8)
-                        .frame(width: 20)
+                Group {
+                    if let icon {
+                        Image(systemName: icon)
+                            .font(.body)
+                            .foregroundStyle(isOn ? color : .secondary)
+                            .frame(width: 20)
+                    } else {
+                        Circle()
+                            .fill(color)
+                            .frame(width: 8, height: 8)
+                            .frame(width: 20)
+                    }
                 }
+
                 Text(label)
                     .font(.body)
-                    .foregroundStyle(isSelected ? .primary : .secondary)
+                    .foregroundStyle(isOn ? .primary : .secondary)
+
                 Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(color)
-                }
+
+                Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
+                    .font(.body)
+                    .foregroundStyle(isOn ? color : Color.appBorder)
+                    .animation(.easeOut(duration: 0.15), value: isOn)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(
-                isSelected ? color.opacity(0.08) : Color.clear
-            )
+            .padding(.vertical, 11)
+            .background(isOn ? color.opacity(0.07) : Color.clear)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

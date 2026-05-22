@@ -41,12 +41,8 @@ final class WorkoutStore {
     }
 
     private func loadWorkouts() {
-        guard let url = Bundle.main.url(forResource: "workouts", withExtension: "json") else {
-            assertionFailure("workouts.json not found in bundle")
-            return
-        }
-        guard let data = try? Data(contentsOf: url) else { return }
-        let decoder = JSONDecoder()
-        workouts = (try? decoder.decode([Workout].self, from: data)) ?? []
+        guard let url = Bundle.module.url(forResource: "workouts", withExtension: "json"),
+              let data = try? Data(contentsOf: url) else { return }
+        workouts = (try? JSONDecoder().decode([Workout].self, from: data)) ?? []
     }
 }
