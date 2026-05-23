@@ -62,7 +62,7 @@ struct IntervalChartView: View {
 
     private var sectionHeader: some View {
         HStack {
-            Label("Intervallstruktur", systemImage: "waveform.path.ecg")
+            Label("Interval Structure", systemImage: "waveform.path.ecg")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
             Spacer()
