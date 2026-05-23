@@ -17,12 +17,15 @@ struct TriWorkoutsApp: App {
                 #if os(macOS)
                 .onAppear {
                     NSApp.activate(ignoringOtherApps: true)
+                    for window in NSApp.windows {
+                        window.collectionBehavior = [.fullScreenPrimary, .managed]
+                        window.styleMask.insert(.resizable)
+                    }
                 }
                 #endif
         }
         #if os(macOS)
         .defaultSize(width: 1200, height: 760)
-        .windowResizability(.contentMinSize)
         #endif
         .commands {
             CommandGroup(replacing: .newItem) { }
