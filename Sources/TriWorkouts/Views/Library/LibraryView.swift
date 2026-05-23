@@ -89,16 +89,6 @@ struct LibraryView: View {
             ForEach(visibleWorkouts) { workout in
                 Button { selectedWorkout = workout } label: {
                     WorkoutCard(workout: workout, isSelected: selectedWorkout?.id == workout.id)
-                        .overlay(alignment: .topLeading) {
-                            if store.isUserWorkout(workout) {
-                                Text("Custom")
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 6).padding(.vertical, 2)
-                                    .background(Color.mutedPurple, in: Capsule())
-                                    .padding(.top, 10).padding(.leading, 10)
-                            }
-                        }
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
