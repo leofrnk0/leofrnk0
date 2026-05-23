@@ -30,7 +30,7 @@ struct WorkoutDetailView: View {
         #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                FITDownloadButton(workout: workout)
+                ExportMenuButton(workout: workout)
             }
         }
     }
@@ -337,24 +337,90 @@ struct SourceSection: View {
     }
 }
 
-// MARK: - FIT Download Button
+// MARK: - Export format
 
-struct FITDownloadButton: View {
+enum ExportFormat: CaseIterable, Identifiable {
+    case fit, zwo, mrc
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .fit: "Garmin / Wahoo (.fit)"
+        case .zwo: "Zwift (.zwo)"
+        case .mrc: "TrainerRoad (.mrc)"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .fit: "bolt.fill"
+        case .zwo: "bicycle"
+        case .mrc: "chart.xyaxis.line"
+        }
+    }
+
+    var ext: String {
+        switch self {
+        case .fit: "fit"
+        case .zwo: "zwo"
+        case .mrc: "mrc"
+        }
+    }
+
+    var saveDescription: String {
+        switch self {
+        case .fit: "Workout für Garmin / Wahoo / Zwift speichern"
+        case .zwo: "Zwift-Workout speichern"
+        case .mrc: "TrainerRoad-Workout speichern"
+        }
+    }
+
+    func encode(_ workout: Workout) throws -> Data {
+        let data: Data
+        switch self {
+        case .fit:
+            data = WorkoutToFIT.encode(workout)
+        case .zwo:
+            data = WorkoutToZWO.encode(workout)
+        case .mrc:
+            data = WorkoutToMRC.encode(workout)
+        }
+        guard !data.isEmpty else { throw ExportError.encodingFailed }
+        return data
+    }
+}
+
+private enum ExportError: LocalizedError {
+    case encodingFailed
+    var errorDescription: String? { "Datei konnte nicht erstellt werden." }
+}
+
+// MARK: - Export menu button
+
+struct ExportMenuButton: View {
     let workout: Workout
     @State private var isGenerating = false
-    @State private var fitFileURL: URL?
+    @State private var exportURL: URL?
     @State private var showShare = false
     @State private var errorMessage: String?
     @State private var showError = false
 
     var body: some View {
-        Button { generateAndShare() } label: {
+        Menu {
+            ForEach(ExportFormat.allCases) { fmt in
+                Button { export(fmt) } label: {
+                    Label(fmt.label, systemImage: fmt.icon)
+                }
+            }
+        } label: {
             if isGenerating {
                 ProgressView().controlSize(.small).tint(.white)
             } else {
-                Label("Download .FIT", systemImage: "square.and.arrow.down")
+                Label("Exportieren", systemImage: "square.and.arrow.up")
             }
         }
+        .menuStyle(.borderlessButton)
         .buttonStyle(.borderedProminent)
         .tint(workout.sport.color)
         .disabled(isGenerating)
@@ -365,28 +431,25 @@ struct FITDownloadButton: View {
         }
         #if os(iOS)
         .sheet(isPresented: $showShare) {
-            if let url = fitFileURL {
-                ShareSheet(url: url)
-            }
+            if let url = exportURL { ShareSheet(url: url) }
         }
         #endif
     }
 
-    private func generateAndShare() {
+    private func export(_ format: ExportFormat) {
         isGenerating = true
         Task.detached(priority: .userInitiated) {
             do {
-                let data = WorkoutToFIT.encode(workout)
-                guard !data.isEmpty else { throw FITError.encodingFailed }
+                let data = try format.encode(workout)
                 let url = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("\(workout.id).fit")
+                    .appendingPathComponent("\(workout.id).\(format.ext)")
                 try data.write(to: url)
                 await MainActor.run {
                     isGenerating = false
                     #if os(macOS)
-                    savePanelMacOS(url: url)
+                    savePanelMacOS(url: url, format: format)
                     #else
-                    fitFileURL = url
+                    exportURL = url
                     showShare = true
                     #endif
                 }
@@ -401,21 +464,16 @@ struct FITDownloadButton: View {
     }
 
     #if os(macOS)
-    private func savePanelMacOS(url: URL) {
+    private func savePanelMacOS(url: URL, format: ExportFormat) {
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "\(workout.id).fit"
+        panel.nameFieldStringValue = "\(workout.id).\(format.ext)"
         panel.allowedContentTypes = [.data]
-        panel.message = "Als .fit-Datei speichern für Garmin / Wahoo / Zwift"
+        panel.message = format.saveDescription
         if panel.runModal() == .OK, let dest = panel.url {
             try? FileManager.default.copyItem(at: url, to: dest)
         }
     }
     #endif
-}
-
-private enum FITError: LocalizedError {
-    case encodingFailed
-    var errorDescription: String? { "FIT-Datei konnte nicht erstellt werden." }
 }
 
 #if os(iOS)
