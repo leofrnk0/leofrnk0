@@ -12,7 +12,6 @@ struct WorkoutDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 sportHeader
-                IntervalChartView(steps: workout.steps, totalDuration: workout.totalDurationSeconds)
                 mainStats
                 zoneDistribution
                 IntervalTableView(steps: workout.steps)
@@ -59,9 +58,9 @@ struct WorkoutDetailView: View {
                 Image(systemName: workout.sport.icon)
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(workout.sport.color)
-                Text(workout.sport.displayName)
+                Text(workout.name)
                     .font(.headline)
-                    .foregroundStyle(workout.sport.color)
+                    .foregroundStyle(.primary)
                 Spacer()
                 difficultyLabel
             }
@@ -93,11 +92,10 @@ struct WorkoutDetailView: View {
 
     private var mainStats: some View {
         LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible()), count: 4),
+            columns: Array(repeating: GridItem(.flexible()), count: 3),
             spacing: 10
         ) {
             StatCard(icon: "clock.fill",    label: "Total",     value: workout.formattedDuration,                        color: .secondary)
-            StatCard(icon: "bolt.fill",     label: "TSS",       value: "\(workout.tss)",                                 color: Color.mutedOrange)
             StatCard(icon: "waveform.path", label: "IF",        value: String(format: "%.2f", workout.intensityFactor),  color: workout.sport.color)
             StatCard(icon: "repeat",        label: "Intervals", value: "\(workout.intervalCount)",                        color: Color.mutedBlue)
         }
