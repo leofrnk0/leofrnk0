@@ -359,23 +359,44 @@ struct CreateWorkoutView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                List {
-                    ForEach(items) { item in
-                        itemRow(item)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 3, leading: 0, bottom: 3, trailing: 0))
+                VStack(spacing: 6) {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
+                        HStack(spacing: 6) {
+                            itemRow(item)
+                                .layoutPriority(1)
+                            VStack(spacing: 0) {
+                                Button {
+                                    guard idx > 0 else { return }
+                                    items.swapAt(idx, idx - 1)
+                                } label: {
+                                    Image(systemName: "chevron.up")
+                                        .font(.caption2.weight(.bold))
+                                        .foregroundStyle(idx > 0 ? .secondary : Color.appBorder)
+                                        .frame(width: 22, height: 20)
+                                }
+                                .buttonStyle(.plain)
+                                Button {
+                                    guard idx < items.count - 1 else { return }
+                                    items.swapAt(idx, idx + 1)
+                                } label: {
+                                    Image(systemName: "chevron.down")
+                                        .font(.caption2.weight(.bold))
+                                        .foregroundStyle(idx < items.count - 1 ? .secondary : Color.appBorder)
+                                        .frame(width: 22, height: 20)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            Button { items.remove(at: idx) } label: {
+                                Image(systemName: "trash")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.mutedRed.opacity(0.65))
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.trailing, 4)
+                        }
                     }
-                    .onMove { items.move(fromOffsets: $0, toOffset: $1) }
-                    .onDelete { items.remove(atOffsets: $0) }
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-                .scrollDisabled(true)
-                #if os(iOS)
-                .environment(\.editMode, .constant(.active))
-                #endif
-                .frame(height: CGFloat(items.count) * rowHeight + 4)
+                .padding(6)
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
             }
         }
@@ -395,14 +416,6 @@ struct CreateWorkoutView: View {
                 showRepeatEditor = true
             }
         }
-    }
-
-    private var rowHeight: CGFloat {
-        #if os(macOS)
-        return 46
-        #else
-        return 62
-        #endif
     }
 
     private var addMenu: some View {

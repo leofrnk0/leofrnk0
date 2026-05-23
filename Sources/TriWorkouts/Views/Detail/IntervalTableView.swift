@@ -63,7 +63,8 @@ private func stepsMatch(_ a: [WorkoutStep], _ b: [WorkoutStep]) -> Bool {
     return zip(a, b).allSatisfy {
         $0.intensity == $1.intensity &&
         $0.durationSeconds == $1.durationSeconds &&
-        $0.zone == $1.zone
+        $0.zone == $1.zone &&
+        $0.powerLowPercent == $1.powerLowPercent
     }
 }
 
@@ -206,7 +207,13 @@ private struct StepRow: View {
                             } else if isSwim, let z = step.zone {
                                 Text("\(z.rawValue) · \(z.name)")
                                     .font(.caption2).foregroundStyle(.tertiary)
-                            } else if let rpm = step.cadence {
+                            }
+                            if !isSwim, let pct = step.ftpPercent {
+                                Label("\(Int(pct))% FTP", systemImage: "bolt.fill")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(Color.mutedOrange)
+                            }
+                            if let rpm = step.cadence {
                                 Label("\(rpm) rpm", systemImage: "arrow.clockwise")
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(Color.mutedBlue)
