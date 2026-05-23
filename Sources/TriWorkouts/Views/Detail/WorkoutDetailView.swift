@@ -34,7 +34,7 @@ struct WorkoutDetailView: View {
             if settings.isAdmin {
                 ToolbarItem(placement: .secondaryAction) {
                     Button { showEdit = true } label: {
-                        Label("Bearbeiten", systemImage: "pencil")
+                        Label("Edit", systemImage: "pencil")
                     }
                 }
             }
@@ -79,9 +79,9 @@ struct WorkoutDetailView: View {
     private var difficultyLabel: some View {
         let (color, label): (Color, String) = switch workout.tss {
         case ..<60:    (Color.mutedBlue,   "Easy")
-        case 60..<85:  (Color.mutedGreen,  "Moderat")
-        case 85..<105: (Color.mutedOrange, "Hart")
-        default:       (Color.mutedRed,    "Sehr Hart")
+        case 60..<85:  (Color.mutedGreen,  "Moderate")
+        case 85..<105: (Color.mutedOrange, "Hard")
+        default:       (Color.mutedRed,    "Very Hard")
         }
         return HStack(spacing: 5) {
             Circle().fill(color).frame(width: 7, height: 7)
@@ -96,10 +96,10 @@ struct WorkoutDetailView: View {
             columns: Array(repeating: GridItem(.flexible()), count: 4),
             spacing: 10
         ) {
-            StatCard(icon: "clock.fill",    label: "Gesamt",    value: workout.formattedDuration,                        color: .secondary)
+            StatCard(icon: "clock.fill",    label: "Total",     value: workout.formattedDuration,                        color: .secondary)
             StatCard(icon: "bolt.fill",     label: "TSS",       value: "\(workout.tss)",                                 color: Color.mutedOrange)
             StatCard(icon: "waveform.path", label: "IF",        value: String(format: "%.2f", workout.intensityFactor),  color: workout.sport.color)
-            StatCard(icon: "repeat",        label: "Intervalle",value: "\(workout.intervalCount)",                        color: Color.mutedBlue)
+            StatCard(icon: "repeat",        label: "Intervals", value: "\(workout.intervalCount)",                        color: Color.mutedBlue)
         }
     }
 
@@ -107,8 +107,8 @@ struct WorkoutDetailView: View {
 
     private var timeBreakdownData: [(label: String, seconds: Int, color: Color)] {
         [
-            ("Arbeit",     workout.steps.filter { $0.intensity == .work     }.reduce(0) { $0 + $1.durationSeconds }, Color.mutedOrange),
-            ("Erholung",   workout.steps.filter { $0.intensity == .rest     }.reduce(0) { $0 + $1.durationSeconds }, Color(white: 0.40)),
+            ("Work",       workout.steps.filter { $0.intensity == .work     }.reduce(0) { $0 + $1.durationSeconds }, Color.mutedOrange),
+            ("Recovery",   workout.steps.filter { $0.intensity == .rest     }.reduce(0) { $0 + $1.durationSeconds }, Color(white: 0.40)),
             ("Warm-up",    workout.steps.filter { $0.intensity == .warmup   }.reduce(0) { $0 + $1.durationSeconds }, Color.mutedBlue),
             ("Cool-down",  workout.steps.filter { $0.intensity == .cooldown }.reduce(0) { $0 + $1.durationSeconds }, Color.mutedCyan),
         ].filter { $0.seconds > 0 }
@@ -118,7 +118,7 @@ struct WorkoutDetailView: View {
         let data = timeBreakdownData
         let total = Double(max(1, workout.totalDurationSeconds))
         return VStack(alignment: .leading, spacing: 10) {
-            sectionLabel("Trainingszeit-Aufschlüsselung", icon: "chart.bar.fill")
+            sectionLabel("Training Time Breakdown", icon: "chart.bar.fill")
             VStack(spacing: 8) {
                 ForEach(data, id: \.label) { item in
                     TimeBar(label: item.label, seconds: item.seconds, total: total, color: item.color)
@@ -151,7 +151,7 @@ struct WorkoutDetailView: View {
         if totalActive > 0 {
             let total = totalActive
             VStack(alignment: .leading, spacing: 10) {
-                sectionLabel("Zonenverteilung", icon: "square.3.layers.3d")
+                sectionLabel("Zone Distribution", icon: "square.3.layers.3d")
                 VStack(spacing: 8) {
                     ForEach(stats, id: \.zone) { item in
                         TimeBar(
@@ -174,7 +174,7 @@ struct WorkoutDetailView: View {
 
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionLabel("Beschreibung", icon: "text.alignleft")
+            sectionLabel("Description", icon: "text.alignleft")
             Text(workout.description)
                 .font(.body)
                 .foregroundStyle(.primary)
@@ -191,7 +191,7 @@ struct WorkoutDetailView: View {
                 .font(.title2)
                 .foregroundStyle(workout.sport.color.opacity(0.85))
             VStack(alignment: .leading, spacing: 2) {
-                Text("Autor").font(.caption).foregroundStyle(.tertiary)
+                Text("Author").font(.caption).foregroundStyle(.tertiary)
                 Text(workout.author).font(.callout.weight(.medium)).foregroundStyle(.primary)
             }
         }
@@ -285,7 +285,7 @@ struct SourceSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Wissenschaftliche Quelle", systemImage: "graduationcap.fill")
+            Label("Scientific Source", systemImage: "graduationcap.fill")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -325,7 +325,7 @@ struct SourceSection: View {
                     Link(destination: url) {
                         HStack(spacing: 5) {
                             Image(systemName: "arrow.up.right.square").font(.caption2)
-                            Text("Quelle öffnen").font(.caption)
+                            Text("Open Source").font(.caption)
                         }
                         .foregroundStyle(Color.mutedBlue.opacity(0.85))
                     }
@@ -341,8 +341,8 @@ struct SourceSection: View {
     private var sourceTypeBadge: some View {
         let (icon, label): (String, String) = switch source.type {
         case "paper":  ("doc.text",       "Paper")
-        case "book":   ("book.closed",    "Buch")
-        case "thesis": ("graduationcap",  "Dissertation")
+        case "book":   ("book.closed",    "Book")
+        case "thesis": ("graduationcap",  "Thesis")
         default:       ("person.fill",    "Coaching")
         }
         return Label(label, systemImage: icon)
@@ -386,9 +386,9 @@ enum ExportFormat: CaseIterable, Identifiable {
 
     var saveDescription: String {
         switch self {
-        case .fit: "Workout für Garmin / Wahoo / Zwift speichern"
-        case .zwo: "Zwift-Workout speichern"
-        case .mrc: "TrainerRoad-Workout speichern"
+        case .fit: "Save workout for Garmin / Wahoo / Zwift"
+        case .zwo: "Save Zwift workout"
+        case .mrc: "Save TrainerRoad workout"
         }
     }
 
@@ -409,7 +409,7 @@ enum ExportFormat: CaseIterable, Identifiable {
 
 private enum ExportError: LocalizedError {
     case encodingFailed
-    var errorDescription: String? { "Datei konnte nicht erstellt werden." }
+    var errorDescription: String? { "File could not be created." }
 }
 
 // MARK: - Export menu button
@@ -433,17 +433,17 @@ struct ExportMenuButton: View {
             if isGenerating {
                 ProgressView().controlSize(.small).tint(.white)
             } else {
-                Label("Exportieren", systemImage: "square.and.arrow.up")
+                Label("Export", systemImage: "square.and.arrow.up")
             }
         }
         .menuStyle(.borderlessButton)
         .buttonStyle(.borderedProminent)
         .tint(workout.sport.color)
         .disabled(isGenerating)
-        .alert("Fehler", isPresented: $showError) {
+        .alert("Error", isPresented: $showError) {
             Button("OK") {}
         } message: {
-            Text(errorMessage ?? "Unbekannter Fehler")
+            Text(errorMessage ?? "Unknown error")
         }
         #if os(iOS)
         .sheet(isPresented: $showShare) {

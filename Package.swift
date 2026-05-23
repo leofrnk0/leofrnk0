@@ -12,8 +12,7 @@ let package = Package(
             name: "TriWorkouts",
             path: "Sources/TriWorkouts",
             resources: [
-                .process("Resources"),
-                .copy("Info.plist")
+                .process("Resources")
             ]
         )
     ]

@@ -110,9 +110,9 @@ struct IntervalTableView: View {
     private var tableHeader: some View {
         HStack(spacing: 0) {
             Text("#").frame(width: 36, alignment: .center)
-            Text("Typ").frame(width: 90, alignment: .leading)
+            Text("Type").frame(width: 90, alignment: .leading)
             Text("Zone").frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-            Text("Dauer").frame(width: 72, alignment: .trailing)
+            Text("Duration").frame(width: 72, alignment: .trailing)
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(.tertiary)
@@ -198,7 +198,7 @@ private struct StepRow: View {
     private var zoneLabel: String {
         if let z = step.zone { return "\(z.rawValue) · \(z.name)" }
         if let n = step.targetZoneNumber { return "HR Zone \(n)" }
-        return "Offen"
+        return "Open"
     }
 }
 
@@ -316,7 +316,7 @@ private struct RepeatGroupRow: View {
     private func zoneLabel(_ step: WorkoutStep) -> String {
         if let z = step.zone { return "\(z.rawValue) · \(z.name)" }
         if let n = step.targetZoneNumber { return "HR Zone \(n)" }
-        return "Offen"
+        return "Open"
     }
 }
 

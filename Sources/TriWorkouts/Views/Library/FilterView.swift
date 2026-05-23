@@ -20,12 +20,12 @@ struct FilterView: View {
     private var macOSSidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Bibliothek")
+                Text("Library")
                     .font(.title2.weight(.bold))
                     .foregroundStyle(.primary)
                 Spacer()
                 if store.activeFilterCount > 0 {
-                    Button("Zurücksetzen") { store.clearFilters() }
+                    Button("Reset") { store.clearFilters() }
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.orange)
                 }
@@ -54,12 +54,12 @@ struct FilterView: View {
 
                 Spacer()
 
-                Text("Filter")
+                Text("Filters")
                     .font(.headline)
 
                 Spacer()
 
-                Button("Fertig") { dismiss() }
+                Button("Done") { dismiss() }
                     .font(.callout.weight(.semibold))
                     .foregroundStyle(.primary)
             }
@@ -81,7 +81,7 @@ struct FilterView: View {
             VStack(alignment: .leading, spacing: 20) {
                 let activeSports = Sport.allCases.filter { settings.enabledSports.contains($0) }
                 if activeSports.count > 1 {
-                    FilterSection(title: "Sportart") {
+                    FilterSection(title: "Sport") {
                         ForEach(activeSports, id: \.self) { sport in
                             FilterToggleRow(
                                 label: sport.displayName,
@@ -93,7 +93,7 @@ struct FilterView: View {
                     }
                 }
 
-                FilterSection(title: "Trainingstyp") {
+                FilterSection(title: "Training Type") {
                     ForEach(WorkoutTag.allCases, id: \.self) { tag in
                         FilterToggleRow(
                             label: tag.displayName,

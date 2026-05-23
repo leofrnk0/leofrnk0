@@ -72,11 +72,11 @@ struct WorkoutCard: View {
 
     private var statsRow: some View {
         HStack(spacing: 0) {
-            StatItem(icon: "clock",            value: workout.formattedDuration,                         label: "Dauer")
+            StatItem(icon: "clock",            value: workout.formattedDuration,                         label: "Duration")
             dividerLine
             StatItem(icon: "bolt",             value: "\(workout.tss)",                                  label: "TSS")
             dividerLine
-            StatItem(icon: "repeat",           value: "\(workout.intervalCount)",                        label: "Intervalle")
+            StatItem(icon: "repeat",           value: "\(workout.intervalCount)",                        label: "Intervals")
             dividerLine
             StatItem(icon: "waveform.path.ecg",value: String(format: "%.2f", workout.intensityFactor),  label: "IF")
         }
@@ -89,9 +89,9 @@ struct WorkoutCard: View {
     private var difficultyBadge: some View {
         let (color, label): (Color, String) = switch workout.tss {
         case ..<60:    (Color.mutedBlue,   "Easy")
-        case 60..<85:  (Color.mutedGreen,  "Moderat")
-        case 85..<105: (Color.mutedOrange, "Hart")
-        default:       (Color.mutedRed,    "Sehr Hart")
+        case 60..<85:  (Color.mutedGreen,  "Moderate")
+        case 85..<105: (Color.mutedOrange, "Hard")
+        default:       (Color.mutedRed,    "Very Hard")
         }
         return Text(label)
             .font(.caption2.weight(.semibold))

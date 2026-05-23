@@ -22,13 +22,13 @@ struct SettingsView: View {
                 .padding(20)
             }
             .background(Color.appBackground)
-            .navigationTitle("Einstellungen")
+            .navigationTitle("Settings")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Fertig") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -44,11 +44,11 @@ struct SettingsView: View {
 
     private var sportSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Meine Sportarten", systemImage: "figure.run")
+            Label("My Sports", systemImage: "figure.run")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            Text("Nur aktivierte Sportarten werden in der Bibliothek angezeigt.")
+            Text("Only enabled sports are shown in the library.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
@@ -92,10 +92,10 @@ struct SettingsView: View {
                     HStack(spacing: 10) {
                         Image(systemName: "checkmark.shield.fill")
                             .foregroundStyle(Color.mutedGreen)
-                        Text("Admin aktiv")
+                        Text("Admin Active")
                             .font(.callout.weight(.medium))
                         Spacer()
-                        Button("Abmelden") { settings.logout() }
+                        Button("Log Out") { settings.logout() }
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Color.mutedRed)
                     }
@@ -107,7 +107,7 @@ struct SettingsView: View {
                         changePINFields
                     } else {
                         Button { showChangePIN = true } label: {
-                            Label("PIN ändern", systemImage: "key.fill")
+                            Label("Change PIN", systemImage: "key.fill")
                                 .font(.callout.weight(.medium))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
@@ -121,7 +121,7 @@ struct SettingsView: View {
                 Button { showAdminLogin = true } label: {
                     HStack {
                         Image(systemName: "lock.fill").foregroundStyle(Color.mutedOrange)
-                        Text("Als Admin anmelden")
+                        Text("Log in as Admin")
                             .font(.callout.weight(.medium))
                         Spacer()
                         Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
@@ -137,22 +137,22 @@ struct SettingsView: View {
 
     private var changePINFields: some View {
         VStack(spacing: 8) {
-            SecureField("Neuer PIN", text: $newPIN)
+            SecureField("New PIN", text: $newPIN)
                 .padding(12)
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder))
-            SecureField("PIN bestätigen", text: $confirmPIN)
+            SecureField("Confirm PIN", text: $confirmPIN)
                 .padding(12)
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(
                     pinMismatch ? Color.mutedRed.opacity(0.6) : Color.appBorder))
             if pinMismatch {
-                Text("PINs stimmen nicht überein")
+                Text("PINs do not match")
                     .font(.caption)
                     .foregroundStyle(Color.mutedRed)
             }
             HStack(spacing: 8) {
-                Button("Abbrechen") {
+                Button("Cancel") {
                     newPIN = ""; confirmPIN = ""; pinMismatch = false; showChangePIN = false
                 }
                 .font(.callout).foregroundStyle(.secondary)
@@ -160,7 +160,7 @@ struct SettingsView: View {
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
                 .buttonStyle(.plain)
 
-                Button("Speichern") {
+                Button("Save") {
                     guard newPIN.count >= 4 else { pinMismatch = true; return }
                     guard newPIN == confirmPIN else { pinMismatch = true; return }
                     settings.changePin(to: newPIN)
