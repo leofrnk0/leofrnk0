@@ -42,35 +42,35 @@ enum Sport: String, Codable, CaseIterable, Hashable {
 // MARK: - WorkoutTag
 
 enum WorkoutTag: String, Codable, CaseIterable, Hashable {
-    case vo2max      = "VO2max"
-    case sweetSpot   = "Sweet Spot"
-    case endurance   = "Endurance"
-    case tempo       = "Tempo"
-    case threshold   = "Threshold"
-    case recovery    = "Recovery"
-    case sprint      = "Sprint"
-    case technique   = "Technique"
-    case ftpTest     = "FTP Test"
-    case base        = "Base"
-    case racePrep    = "Race Prep"
-    case css         = "CSS"
+    case vo2max       = "VO2max"
+    case sweetSpot    = "Sweet Spot"
+    case endurance    = "Endurance"
+    case tempo        = "Tempo"
+    case threshold    = "Threshold"
+    case recovery     = "Recovery"
+    case sprint       = "Sprint"
+    case technique    = "Technique"
+    case assessment   = "Assessment"
+    case trackSession = "Track Session"
+    case racePrep     = "Race Prep"
+    case css          = "CSS"
 
     var displayName: String { rawValue }
 
     var color: Color {
         switch self {
-        case .vo2max:    Color.mutedOrange
-        case .sweetSpot: Color.mutedYellow
-        case .endurance: Color.mutedBlue
-        case .tempo:     Color.mutedGreen
-        case .threshold: Color.mutedYellow
-        case .recovery:  Color(white: 0.42)
-        case .sprint:    Color.mutedRed
-        case .technique: Color.mutedPurple
-        case .ftpTest:   Color.mutedOrange
-        case .base:      Color.mutedCyan
-        case .racePrep:  Color.mutedRed
-        case .css:       Color.mutedCyan
+        case .vo2max:       Color.mutedOrange
+        case .sweetSpot:    Color.mutedYellow
+        case .endurance:    Color.mutedBlue
+        case .tempo:        Color.mutedGreen
+        case .threshold:    Color.mutedYellow
+        case .recovery:     Color(white: 0.42)
+        case .sprint:       Color.mutedRed
+        case .technique:    Color.mutedPurple
+        case .assessment:   Color.mutedCyan
+        case .trackSession: Color.mutedGreen
+        case .racePrep:     Color.mutedRed
+        case .css:          Color.mutedCyan
         }
     }
 }
