@@ -233,8 +233,22 @@ struct WorkoutStep: Codable, Identifiable {
     let distanceMeters: Int?
     let equipment: [SwimEquipment]?
 
+    var ftpPercent: Double? {
+        guard zone == nil, let lo = powerLowPercent else { return nil }
+        return lo
+    }
+
     var zoneColor: Color {
         if let z = zone { return z.color }
+        if let pct = ftpPercent {
+            switch pct {
+            case ..<55:  return Color(white: 0.40)
+            case ..<76:  return Color.mutedBlue
+            case ..<91:  return Color.mutedGreen
+            case ..<106: return Color.mutedOrange
+            default:     return Color.mutedRed
+            }
+        }
         switch intensity {
         case .warmup:   return Color(white: 0.35)
         case .rest:     return Color(white: 0.20)
@@ -246,6 +260,15 @@ struct WorkoutStep: Codable, Identifiable {
     // Relative bar height for the profile chart (0–1, bottom-anchored)
     var heightFactor: CGFloat {
         if let z = zone { return z.heightFactor }
+        if let pct = ftpPercent {
+            switch pct {
+            case ..<55:  return 0.12
+            case ..<76:  return 0.35
+            case ..<91:  return 0.58
+            case ..<106: return 0.78
+            default:     return 1.00
+            }
+        }
         switch intensity {
         case .warmup:   return 0.22
         case .work:     return 0.72

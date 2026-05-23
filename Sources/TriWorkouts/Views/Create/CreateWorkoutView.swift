@@ -14,6 +14,7 @@ fileprivate struct DraftStep: Identifiable {
     var durationMode: DurationMode = .time
     var distanceMeters: Int = 400
     var swimEquipment: Set<SwimEquipment> = []
+    var ftpPercent: Double? = nil
 
     init(intensity: StepIntensity = .work, minutes: Int = 5, seconds: Int = 0,
          zone: PowerZone? = .z3, description: String = "") {
@@ -34,6 +35,7 @@ fileprivate struct DraftStep: Identifiable {
             distanceMeters = d
         }
         swimEquipment = Set(step.equipment ?? [])
+        ftpPercent = step.ftpPercent
     }
 
     var durationSeconds: Int { max(1, minutes * 60 + seconds) }
@@ -69,8 +71,8 @@ fileprivate struct DraftStep: Identifiable {
     func toWorkoutStep(index: Int, sport: Sport) -> WorkoutStep {
         let secs = durationMode == .time ? durationSeconds : estimatedSeconds(sport: sport)
         return WorkoutStep(id: index, intensity: intensity, durationSeconds: secs,
-                    targetType: zone != nil ? .powerZone : .open, zone: zone,
-                    targetZoneNumber: nil, powerLowPercent: nil, powerHighPercent: nil,
+                    targetType: zone != nil || ftpPercent != nil ? .powerZone : .open, zone: zone,
+                    targetZoneNumber: nil, powerLowPercent: ftpPercent, powerHighPercent: ftpPercent,
                     description: stepDescription.isEmpty ? intensity.displayName : stepDescription,
                     repeatCount: nil,
                     distanceMeters: durationMode == .distance ? distanceMeters : nil,
@@ -157,7 +159,8 @@ struct CreateWorkoutView: View {
         let total = Double(totalSeconds)
         guard total > 0 else { return 0.0 }
         let w = flattenedSteps.reduce(0.0) {
-            $0 + ($1.zone?.ifValue ?? $1.intensity.baseIF) * Double($1.durationSeconds)
+            let stepIF = $1.zone?.ifValue ?? $1.ftpPercent.map { $0 / 100.0 } ?? $1.intensity.baseIF
+            return $0 + stepIF * Double($1.durationSeconds)
         }
         return (w / total * 100).rounded() / 100
     }
@@ -482,6 +485,8 @@ private struct StepCardRow: View {
                         .background(step.intensityColor.opacity(0.15), in: Capsule())
                     if let zone = step.zone {
                         Text("\(zone.rawValue) · \(zone.name)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    } else if let pct = step.ftpPercent {
+                        Text("\(Int(pct))% FTP").font(.caption).foregroundStyle(Color.mutedOrange).lineLimit(1)
                     } else {
                         Text("Open").font(.caption).foregroundStyle(.tertiary)
                     }
@@ -623,6 +628,41 @@ private struct DistanceSpinner: View {
     }
 }
 
+// MARK: - FTP percent spinner
+
+private struct FTPPercentSpinner: View {
+    @Binding var value: Double
+    private let step: Double = 5
+    private let range: ClosedRange<Double> = 40...150
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Button { value = min(range.upperBound, value + step) } label: {
+                Image(systemName: "chevron.up.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(value < range.upperBound ? Color.mutedOrange : Color.appBorder)
+            }
+            .buttonStyle(.plain)
+
+            Text("\(Int(value))%")
+                .font(.system(size: 48, weight: .bold, design: .monospaced))
+                .frame(minWidth: 140, alignment: .center)
+                .contentTransition(.numericText())
+
+            Button { value = max(range.lowerBound, value - step) } label: {
+                Image(systemName: "chevron.down.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(value > range.lowerBound ? .secondary : Color.appBorder)
+            }
+            .buttonStyle(.plain)
+
+            Text("% FTP").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 16)
+        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
 // MARK: - Step editor sheet (redesigned, no Form)
 
 fileprivate struct StepEditorSheet: View {
@@ -681,35 +721,61 @@ fileprivate struct StepEditorSheet: View {
 
                     // Zone
                     editorSection("Zone", icon: "gauge.medium") {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                            // "Keine Zone" tile
-                            let noZoneOn = draft.zone == nil
-                            Button { draft.zone = nil } label: {
-                                VStack(spacing: 4) {
-                                    Image(systemName: "minus.circle").font(.body)
-                                    Text("Open").font(.caption.weight(.semibold))
-                                }
-                                .foregroundStyle(noZoneOn ? .white : .secondary)
-                                .frame(maxWidth: .infinity).padding(.vertical, 12)
-                                .background(noZoneOn ? Color(white: 0.3) : Color.appElevated, in: RoundedRectangle(cornerRadius: 10))
-                            }
-                            .buttonStyle(.plain)
-                            .animation(.easeOut(duration: 0.1), value: draft.zone == nil)
-
-                            ForEach(PowerZone.allCases, id: \.self) { zone in
-                                let on = draft.zone == zone
-                                Button { draft.zone = zone } label: {
-                                    VStack(spacing: 4) {
-                                        Circle().fill(zone.color).frame(width: 10, height: 10)
-                                        Text(zone.rawValue).font(.caption.weight(.bold))
-                                        Text(zone.name).font(.caption2).lineLimit(1)
+                        if sport == .cycling {
+                            Picker("", selection: Binding<Bool>(
+                                get: { draft.ftpPercent != nil },
+                                set: { newVal in
+                                    if newVal {
+                                        draft.zone = nil
+                                        if draft.ftpPercent == nil { draft.ftpPercent = 75 }
+                                    } else {
+                                        draft.ftpPercent = nil
                                     }
-                                    .foregroundStyle(on ? .white : zone.color)
-                                    .frame(maxWidth: .infinity).padding(.vertical, 10)
-                                    .background(on ? zone.color : zone.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                                }
+                            )) {
+                                Text("Zone").tag(false)
+                                Text("FTP %").tag(true)
+                            }
+                            .pickerStyle(.segmented)
+                            .padding(.bottom, 4)
+                        }
+
+                        if sport == .cycling && draft.ftpPercent != nil {
+                            FTPPercentSpinner(value: Binding(
+                                get: { draft.ftpPercent ?? 75 },
+                                set: { draft.ftpPercent = $0 }
+                            ))
+                        } else {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                                // "Keine Zone" tile
+                                let noZoneOn = draft.zone == nil
+                                Button { draft.zone = nil } label: {
+                                    VStack(spacing: 4) {
+                                        Image(systemName: "minus.circle").font(.body)
+                                        Text("Open").font(.caption.weight(.semibold))
+                                    }
+                                    .foregroundStyle(noZoneOn ? .white : .secondary)
+                                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                    .background(noZoneOn ? Color(white: 0.3) : Color.appElevated, in: RoundedRectangle(cornerRadius: 10))
                                 }
                                 .buttonStyle(.plain)
-                                .animation(.easeOut(duration: 0.1), value: on)
+                                .animation(.easeOut(duration: 0.1), value: draft.zone == nil)
+
+                                ForEach(PowerZone.allCases, id: \.self) { zone in
+                                    let on = draft.zone == zone
+                                    Button { draft.zone = zone } label: {
+                                        VStack(spacing: 4) {
+                                            Circle().fill(zone.color).frame(width: 10, height: 10)
+                                            Text(zone.rawValue).font(.caption.weight(.bold))
+                                            Text(zone.name).font(.caption2).lineLimit(1)
+                                        }
+                                        .foregroundStyle(on ? .white : zone.color)
+                                        .frame(maxWidth: .infinity).padding(.vertical, 10)
+                                        .background(on ? zone.color : zone.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .animation(.easeOut(duration: 0.1), value: on)
+                                }
                             }
                         }
                     }
@@ -932,7 +998,11 @@ private struct InnerStepRow: View {
                     .font(.caption2.weight(.bold)).foregroundStyle(step.intensityColor)
                     .padding(.horizontal, 5).padding(.vertical, 2)
                     .background(step.intensityColor.opacity(0.14), in: Capsule())
-                if let z = step.zone { Text("\(z.rawValue)").font(.caption).foregroundStyle(.secondary) }
+                if let z = step.zone {
+                    Text("\(z.rawValue)").font(.caption).foregroundStyle(.secondary)
+                } else if let pct = step.ftpPercent {
+                    Text("\(Int(pct))% FTP").font(.caption).foregroundStyle(Color.mutedOrange)
+                }
                 Spacer()
                 Text(step.formattedDuration).font(.system(.callout, design: .monospaced).weight(.medium))
                 Button(action: onDelete) {
