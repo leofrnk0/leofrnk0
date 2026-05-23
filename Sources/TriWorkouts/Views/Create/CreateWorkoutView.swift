@@ -17,6 +17,15 @@ fileprivate struct DraftStep: Identifiable {
         self.seconds = seconds; self.zone = zone; self.stepDescription = description
     }
 
+    init(from step: WorkoutStep) {
+        id = UUID().uuidString
+        intensity = step.intensity
+        minutes = step.durationSeconds / 60
+        seconds = step.durationSeconds % 60
+        zone = step.zone
+        stepDescription = step.description
+    }
+
     var durationSeconds: Int { max(1, minutes * 60 + seconds) }
 
     var formattedDuration: String {
@@ -68,16 +77,37 @@ struct CreateWorkoutView: View {
     @Environment(WorkoutStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
-    @State private var name = ""
-    @State private var sport: Sport = .cycling
-    @State private var selectedTags: Set<WorkoutTag> = []
-    @State private var authorName = ""
-    @State private var workoutDescription = ""
-    @State private var items: [DraftItem] = []
+    private let editingWorkout: Workout?
+
+    @State private var name: String
+    @State private var sport: Sport
+    @State private var selectedTags: Set<WorkoutTag>
+    @State private var authorName: String
+    @State private var workoutDescription: String
+    @State private var items: [DraftItem]
 
     @State private var editingItemID: String? = nil
     @State private var showStepEditor = false
     @State private var showRepeatEditor = false
+
+    init(editingWorkout: Workout? = nil) {
+        self.editingWorkout = editingWorkout
+        if let w = editingWorkout {
+            _name               = State(initialValue: w.name)
+            _sport              = State(initialValue: w.sport)
+            _selectedTags       = State(initialValue: Set(w.tags))
+            _authorName         = State(initialValue: w.author)
+            _workoutDescription = State(initialValue: w.description)
+            _items              = State(initialValue: w.steps.map { .step(DraftStep(from: $0)) })
+        } else {
+            _name               = State(initialValue: "")
+            _sport              = State(initialValue: .cycling)
+            _selectedTags       = State(initialValue: [])
+            _authorName         = State(initialValue: "")
+            _workoutDescription = State(initialValue: "")
+            _items              = State(initialValue: [])
+        }
+    }
 
     // MARK: Computed
 
@@ -123,7 +153,7 @@ struct CreateWorkoutView: View {
         NavigationStack {
             mainContent
                 .background(Color.appBackground)
-                .navigationTitle("Workout erstellen")
+                .navigationTitle(editingWorkout == nil ? "Workout erstellen" : "Workout bearbeiten")
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
@@ -393,15 +423,16 @@ struct CreateWorkoutView: View {
                         powerLowPercent: nil, powerHighPercent: nil, description: s.description, repeatCount: nil)
         }
         let total = indexed.reduce(0) { $0 + $1.durationSeconds }
-        store.addWorkout(Workout(
-            id: "user-\(UUID().uuidString)",
+        let workout = Workout(
+            id: editingWorkout?.id ?? "user-\(UUID().uuidString)",
             name: name.trimmingCharacters(in: .whitespaces),
             sport: sport, tags: Array(selectedTags),
             totalDurationSeconds: total, tss: computedTSS, intensityFactor: computedIF,
             description: workoutDescription.isEmpty ? name : workoutDescription,
             author: authorName.isEmpty ? "Eigenes Workout" : authorName,
             steps: indexed, source: nil
-        ))
+        )
+        if editingWorkout != nil { store.updateWorkout(workout) } else { store.addWorkout(workout) }
         dismiss()
     }
 }
