@@ -1,18 +1,20 @@
 import SwiftUI
 import AppKit
 
+// Handles activation policy before the run loop starts.
+// Must be done in applicationWillFinishLaunching – the earliest safe
+// point where NSApp is guaranteed to exist in an SPM executable.
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.regular)
+    }
+}
+
 @main
 struct TriWorkoutsApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var store    = WorkoutStore()
     @State private var settings = AppSettings()
-
-    init() {
-        // Without this, SPM executables run as background/accessory processes:
-        // no Dock icon, no foreground activation, no fullscreen support.
-        // NSApp (the global) is nil until NSApplication is created; .shared
-        // creates it if needed, avoiding the nil-unwrap crash on startup.
-        NSApplication.shared.setActivationPolicy(.regular)
-    }
 
     var body: some Scene {
         WindowGroup {
