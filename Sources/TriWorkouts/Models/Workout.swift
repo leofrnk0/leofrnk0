@@ -16,9 +16,9 @@ enum Sport: String, Codable, CaseIterable, Hashable {
 
     var color: Color {
         switch self {
-        case .cycling:  .mutedOrange
-        case .running:  .mutedGreen
-        case .swimming: .mutedCyan
+        case .cycling:  Color.mutedOrange
+        case .running:  Color.mutedGreen
+        case .swimming: Color.mutedCyan
         }
     }
 
@@ -59,18 +59,18 @@ enum WorkoutTag: String, Codable, CaseIterable, Hashable {
 
     var color: Color {
         switch self {
-        case .vo2max:    .mutedOrange
-        case .sweetSpot: .mutedYellow
-        case .endurance: .mutedBlue
-        case .tempo:     .mutedGreen
-        case .threshold: .mutedYellow
+        case .vo2max:    Color.mutedOrange
+        case .sweetSpot: Color.mutedYellow
+        case .endurance: Color.mutedBlue
+        case .tempo:     Color.mutedGreen
+        case .threshold: Color.mutedYellow
         case .recovery:  Color(white: 0.42)
-        case .sprint:    .mutedRed
-        case .technique: .mutedPurple
-        case .ftpTest:   .mutedOrange
-        case .base:      .mutedCyan
-        case .racePrep:  .mutedRed
-        case .css:       .mutedCyan
+        case .sprint:    Color.mutedRed
+        case .technique: Color.mutedPurple
+        case .ftpTest:   Color.mutedOrange
+        case .base:      Color.mutedCyan
+        case .racePrep:  Color.mutedRed
+        case .css:       Color.mutedCyan
         }
     }
 }
@@ -93,10 +93,10 @@ enum PowerZone: String, Codable, CaseIterable, Hashable {
     var color: Color {
         switch self {
         case .z1: Color(white: 0.40)
-        case .z2: .mutedBlue
-        case .z3: .mutedGreen
-        case .z4: .mutedOrange
-        case .z5: .mutedRed
+        case .z2: Color.mutedBlue
+        case .z3: Color.mutedGreen
+        case .z4: Color.mutedOrange
+        case .z5: Color.mutedRed
         }
     }
 
@@ -211,7 +211,7 @@ struct WorkoutStep: Codable, Identifiable {
         case .warmup:   return Color(white: 0.35)
         case .rest:     return Color(white: 0.20)
         case .cooldown: return Color(white: 0.30)
-        case .work:     return .orange
+        case .work:     return Color.mutedOrange
         }
     }
 

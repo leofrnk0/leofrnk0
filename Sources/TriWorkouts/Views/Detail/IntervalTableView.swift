@@ -327,10 +327,10 @@ private struct IntensityBadge: View {
 
     private var color: Color {
         switch intensity {
-        case .warmup:   .mutedBlue
-        case .work:     .mutedOrange
+        case .warmup:   Color.mutedBlue
+        case .work:     Color.mutedOrange
         case .rest:     Color(white: 0.40)
-        case .cooldown: .mutedCyan
+        case .cooldown: Color.mutedCyan
         }
     }
 

@@ -62,10 +62,10 @@ struct WorkoutDetailView: View {
 
     private var difficultyLabel: some View {
         let (color, label): (Color, String) = switch workout.tss {
-        case ..<60:    (.mutedBlue,   "Easy")
-        case 60..<85:  (.mutedGreen,  "Moderat")
-        case 85..<105: (.mutedOrange, "Hart")
-        default:       (.mutedRed,    "Sehr Hart")
+        case ..<60:    (Color.mutedBlue,   "Easy")
+        case 60..<85:  (Color.mutedGreen,  "Moderat")
+        case 85..<105: (Color.mutedOrange, "Hart")
+        default:       (Color.mutedRed,    "Sehr Hart")
         }
         return HStack(spacing: 5) {
             Circle().fill(color).frame(width: 7, height: 7)
@@ -81,9 +81,9 @@ struct WorkoutDetailView: View {
             spacing: 10
         ) {
             StatCard(icon: "clock.fill",    label: "Gesamt",    value: workout.formattedDuration,                        color: .secondary)
-            StatCard(icon: "bolt.fill",     label: "TSS",       value: "\(workout.tss)",                                 color: .mutedOrange)
+            StatCard(icon: "bolt.fill",     label: "TSS",       value: "\(workout.tss)",                                 color: Color.mutedOrange)
             StatCard(icon: "waveform.path", label: "IF",        value: String(format: "%.2f", workout.intensityFactor),  color: workout.sport.color)
-            StatCard(icon: "repeat",        label: "Intervalle",value: "\(workout.intervalCount)",                        color: .mutedBlue)
+            StatCard(icon: "repeat",        label: "Intervalle",value: "\(workout.intervalCount)",                        color: Color.mutedBlue)
         }
     }
 
@@ -331,7 +331,7 @@ struct SourceSection: View {
         }
         return Label(label, systemImage: icon)
             .font(.caption2.weight(.semibold))
-            .foregroundStyle(.mutedBlue)
+            .foregroundStyle(Color.mutedBlue)
             .padding(.horizontal, 8).padding(.vertical, 3)
             .background(Color.mutedBlue.opacity(0.10), in: Capsule())
     }

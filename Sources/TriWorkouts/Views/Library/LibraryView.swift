@@ -60,7 +60,7 @@ struct LibraryView: View {
             if store.activeFilterCount > 0 {
                 Button("Zurücksetzen") { store.clearFilters() }
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.mutedOrange)
+                    .foregroundStyle(Color.mutedOrange)
             }
         }
     }

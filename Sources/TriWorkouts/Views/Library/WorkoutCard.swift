@@ -87,10 +87,10 @@ struct WorkoutCard: View {
 
     private var difficultyBadge: some View {
         let (color, label): (Color, String) = switch workout.tss {
-        case ..<60:    (.mutedBlue,   "Easy")
-        case 60..<85:  (.mutedGreen,  "Moderat")
-        case 85..<105: (.mutedOrange, "Hart")
-        default:       (.mutedRed,    "Sehr Hart")
+        case ..<60:    (Color.mutedBlue,   "Easy")
+        case 60..<85:  (Color.mutedGreen,  "Moderat")
+        case 85..<105: (Color.mutedOrange, "Hart")
+        default:       (Color.mutedRed,    "Sehr Hart")
         }
         return Text(label)
             .font(.caption2.weight(.semibold))
