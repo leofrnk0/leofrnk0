@@ -6,7 +6,7 @@
     "tags": [
       "Sweet Spot",
       "Threshold",
-      "Base"
+      "Endurance"
     ],
     "totalDurationSeconds": 4500,
     "tss": 98,
@@ -196,7 +196,7 @@
     "sport": "cycling",
     "tags": [
       "Endurance",
-      "Base"
+      "Endurance"
     ],
     "totalDurationSeconds": 5400,
     "tss": 70,
@@ -518,7 +518,7 @@
     "name": "FTP Ramp Test",
     "sport": "cycling",
     "tags": [
-      "FTP Test"
+      "Assessment"
     ],
     "totalDurationSeconds": 3300,
     "tss": 80,
@@ -962,7 +962,7 @@
     "sport": "running",
     "tags": [
       "Endurance",
-      "Base"
+      "Endurance"
     ],
     "totalDurationSeconds": 5400,
     "tss": 60,
