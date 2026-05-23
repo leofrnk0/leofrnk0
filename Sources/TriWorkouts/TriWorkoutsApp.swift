@@ -9,7 +9,9 @@ struct TriWorkoutsApp: App {
     init() {
         // Without this, SPM executables run as background/accessory processes:
         // no Dock icon, no foreground activation, no fullscreen support.
-        NSApp.setActivationPolicy(.regular)
+        // NSApp (the global) is nil until NSApplication is created; .shared
+        // creates it if needed, avoiding the nil-unwrap crash on startup.
+        NSApplication.shared.setActivationPolicy(.regular)
     }
 
     var body: some Scene {
