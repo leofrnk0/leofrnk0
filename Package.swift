@@ -4,7 +4,6 @@ import PackageDescription
 let package = Package(
     name: "TriWorkouts",
     platforms: [
-        .iOS(.v17),
         .macOS(.v14)
     ],
     targets: [
