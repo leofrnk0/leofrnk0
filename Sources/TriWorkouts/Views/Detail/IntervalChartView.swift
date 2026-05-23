@@ -98,6 +98,10 @@ struct IntervalChartView: View {
                     Text(zone.rawValue)
                         .font(.caption.weight(.medium))
                         .foregroundStyle(zone.color)
+                } else if let pct = step.ftpPercent {
+                    Text("\(Int(pct))% FTP")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Color.mutedOrange)
                 } else if let n = step.targetZoneNumber {
                     Text("HR Z\(n)")
                         .font(.caption)

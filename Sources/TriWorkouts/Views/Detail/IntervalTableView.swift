@@ -260,6 +260,7 @@ private struct StepRow: View {
 
     private var zoneLabel: String {
         if let z = step.zone { return "\(z.rawValue) · \(z.name)" }
+        if let pct = step.ftpPercent { return "\(Int(pct))% FTP" }
         if let n = step.targetZoneNumber { return "HR Zone \(n)" }
         return "Open"
     }
@@ -390,6 +391,7 @@ private struct RepeatGroupRow: View {
 
     private func zoneLabel(_ step: WorkoutStep) -> String {
         if let z = step.zone { return "\(z.rawValue) · \(z.name)" }
+        if let pct = step.ftpPercent { return "\(Int(pct))% FTP" }
         if let n = step.targetZoneNumber { return "HR Zone \(n)" }
         return "Open"
     }
