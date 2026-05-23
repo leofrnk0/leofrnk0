@@ -63,7 +63,7 @@ struct WorkoutDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(""\(workout.name)" will be permanently deleted.")
+            Text("\"\(workout.name)\" will be permanently deleted.")
         }
         .sheet(isPresented: $showEdit) {
             CreateWorkoutView(editingWorkout: workout)
