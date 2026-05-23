@@ -80,7 +80,7 @@ enum WorkoutToZWO {
     // MARK: - Helpers
 
     private static func power(_ step: WorkoutStep) -> Double {
-        step.zone?.ifValue ?? step.intensity.baseIF
+        step.zone?.ifValue ?? step.ftpPercent.map { $0 / 100.0 } ?? step.intensity.baseIF
     }
 
     private static func fmt(_ v: Double) -> String {

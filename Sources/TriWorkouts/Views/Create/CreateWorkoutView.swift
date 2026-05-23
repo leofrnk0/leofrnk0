@@ -15,6 +15,7 @@ fileprivate struct DraftStep: Identifiable {
     var distanceMeters: Int = 400
     var swimEquipment: Set<SwimEquipment> = []
     var ftpPercent: Double? = nil
+    var cadence: Int? = nil
 
     init(intensity: StepIntensity = .work, minutes: Int = 5, seconds: Int = 0,
          zone: PowerZone? = .z3, description: String = "") {
@@ -36,6 +37,7 @@ fileprivate struct DraftStep: Identifiable {
         }
         swimEquipment = Set(step.equipment ?? [])
         ftpPercent = step.ftpPercent
+        cadence = step.cadence
     }
 
     var durationSeconds: Int { max(1, minutes * 60 + seconds) }
@@ -76,7 +78,8 @@ fileprivate struct DraftStep: Identifiable {
                     description: stepDescription.isEmpty ? intensity.displayName : stepDescription,
                     repeatCount: nil,
                     distanceMeters: durationMode == .distance ? distanceMeters : nil,
-                    equipment: swimEquipment.isEmpty ? nil : Array(swimEquipment))
+                    equipment: swimEquipment.isEmpty ? nil : Array(swimEquipment),
+                    cadence: cadence)
     }
 }
 
@@ -448,10 +451,11 @@ struct CreateWorkoutView: View {
         let steps = flattenedSteps
         let indexed = steps.enumerated().map { idx, s in
             WorkoutStep(id: idx, intensity: s.intensity, durationSeconds: s.durationSeconds,
-                        targetType: s.targetType, zone: s.zone, targetZoneNumber: nil,
-                        powerLowPercent: nil, powerHighPercent: nil, description: s.description,
-                        repeatCount: nil, distanceMeters: s.distanceMeters,
-                        equipment: s.equipment)
+                        targetType: s.targetType, zone: s.zone, targetZoneNumber: s.targetZoneNumber,
+                        powerLowPercent: s.powerLowPercent, powerHighPercent: s.powerHighPercent,
+                        description: s.description,
+                        repeatCount: s.repeatCount, distanceMeters: s.distanceMeters,
+                        equipment: s.equipment, cadence: s.cadence)
         }
         let total = indexed.reduce(0) { $0 + $1.durationSeconds }
         let workout = Workout(
@@ -489,6 +493,13 @@ private struct StepCardRow: View {
                         Text("\(Int(pct))% FTP").font(.caption).foregroundStyle(Color.mutedOrange).lineLimit(1)
                     } else {
                         Text("Open").font(.caption).foregroundStyle(.tertiary)
+                    }
+                    if let rpm = step.cadence {
+                        Text("\(rpm) rpm")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color.mutedBlue)
+                            .padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.mutedBlue.opacity(0.12), in: Capsule())
                     }
                     Spacer(minLength: 4)
                     Text(step.formattedDuration)
@@ -663,6 +674,46 @@ private struct FTPPercentSpinner: View {
     }
 }
 
+// MARK: - Cadence spinner
+
+private struct CadenceSpinner: View {
+    @Binding var value: Int
+    private let step = 5
+    private let range = 55...130
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Button { value = min(range.upperBound, value + step) } label: {
+                Image(systemName: "chevron.up.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(value < range.upperBound ? Color.mutedBlue : Color.appBorder)
+            }
+            .buttonStyle(.plain)
+
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text("\(value)")
+                    .font(.system(size: 48, weight: .bold, design: .monospaced))
+                    .contentTransition(.numericText())
+                Text("rpm")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+
+            Button { value = max(range.lowerBound, value - step) } label: {
+                Image(systemName: "chevron.down.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(value > range.lowerBound ? .secondary : Color.appBorder)
+            }
+            .buttonStyle(.plain)
+
+            Text("cadence").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 16)
+        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
 // MARK: - Step editor sheet (redesigned, no Form)
 
 fileprivate struct StepEditorSheet: View {
@@ -776,6 +827,30 @@ fileprivate struct StepEditorSheet: View {
                                     .buttonStyle(.plain)
                                     .animation(.easeOut(duration: 0.1), value: on)
                                 }
+                            }
+                        }
+                    }
+
+                    // Cadence (cycling only)
+                    if sport == .cycling {
+                        editorSection("Cadence", icon: "arrow.clockwise") {
+                            Toggle(isOn: Binding(
+                                get: { draft.cadence != nil },
+                                set: { on in draft.cadence = on ? 90 : nil }
+                            )) {
+                                Text(draft.cadence == nil ? "No target cadence" : "\(draft.cadence!) rpm")
+                                    .font(.callout)
+                                    .foregroundStyle(draft.cadence == nil ? .secondary : .primary)
+                            }
+                            .tint(Color.mutedBlue)
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
+
+                            if draft.cadence != nil {
+                                CadenceSpinner(value: Binding(
+                                    get: { draft.cadence ?? 90 },
+                                    set: { draft.cadence = $0 }
+                                ))
                             }
                         }
                     }
@@ -1002,6 +1077,13 @@ private struct InnerStepRow: View {
                     Text("\(z.rawValue)").font(.caption).foregroundStyle(.secondary)
                 } else if let pct = step.ftpPercent {
                     Text("\(Int(pct))% FTP").font(.caption).foregroundStyle(Color.mutedOrange)
+                }
+                if let rpm = step.cadence {
+                    Text("\(rpm) rpm")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Color.mutedBlue)
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(Color.mutedBlue.opacity(0.12), in: Capsule())
                 }
                 Spacer()
                 Text(step.formattedDuration).font(.system(.callout, design: .monospaced).weight(.medium))

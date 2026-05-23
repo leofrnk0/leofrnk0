@@ -232,6 +232,7 @@ struct WorkoutStep: Codable, Identifiable {
     let repeatCount: Int?
     let distanceMeters: Int?
     let equipment: [SwimEquipment]?
+    let cadence: Int?
 
     var ftpPercent: Double? {
         guard zone == nil, let lo = powerLowPercent else { return nil }

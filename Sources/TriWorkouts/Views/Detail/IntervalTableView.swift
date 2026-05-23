@@ -206,6 +206,10 @@ private struct StepRow: View {
                             } else if isSwim, let z = step.zone {
                                 Text("\(z.rawValue) · \(z.name)")
                                     .font(.caption2).foregroundStyle(.tertiary)
+                            } else if let rpm = step.cadence {
+                                Label("\(rpm) rpm", systemImage: "arrow.clockwise")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(Color.mutedBlue)
                             }
                         }
                         Spacer()

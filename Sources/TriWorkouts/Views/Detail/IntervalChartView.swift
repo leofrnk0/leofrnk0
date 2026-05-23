@@ -107,6 +107,11 @@ struct IntervalChartView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                if let rpm = step.cadence {
+                    Text("\(rpm) rpm")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(Color.mutedBlue)
+                }
             }
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
