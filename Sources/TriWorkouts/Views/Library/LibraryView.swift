@@ -4,7 +4,6 @@ struct LibraryView: View {
     @Environment(WorkoutStore.self) private var store
     @Environment(AppSettings.self) private var settings
     @Binding var selectedWorkout: Workout?
-    @State private var showFilter   = false
     @State private var showCreate   = false
     @State private var showSettings = false
     @State private var editingWorkout: Workout? = nil
@@ -34,19 +33,14 @@ struct LibraryView: View {
                     if settings.isAdmin { createButton }
                 }
             }
-            ToolbarItem(placement: .navigationBarTrailing) { filterButton }
             #else
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 6) {
                     settingsButton
                     if settings.isAdmin { createButton }
-                    filterButton
                 }
             }
             #endif
-        }
-        .sheet(isPresented: $showFilter) {
-            FilterView().presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showCreate) {
             CreateWorkoutView()
@@ -152,17 +146,7 @@ struct LibraryView: View {
         }
     }
 
-    private var filterButton: some View {
-        Button { showFilter = true } label: {
-            Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
-                .overlay(alignment: .topTrailing) {
-                    if store.activeFilterCount > 0 {
-                        Circle().fill(Color.mutedOrange).frame(width: 8, height: 8)
-                            .offset(x: 2, y: -2)
-                    }
-                }
-        }
-    }
+
 }
 
 // MARK: - Sport stat pill
