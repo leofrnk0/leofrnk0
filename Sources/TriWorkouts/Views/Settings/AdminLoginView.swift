@@ -30,7 +30,9 @@ struct AdminLoginView: View {
                 SecureField("PIN", text: $pin)
                     .font(.system(size: 28, weight: .bold, design: .monospaced))
                     .multilineTextAlignment(.center)
+                    #if os(iOS)
                     .keyboardType(.numberPad)
+                    #endif
                     .focused($focused)
                     .padding(.vertical, 16)
                     .background(Color.appCard, in: RoundedRectangle(cornerRadius: 14))

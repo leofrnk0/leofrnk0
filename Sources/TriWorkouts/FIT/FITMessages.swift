@@ -43,7 +43,7 @@ let kFileIDFields: [FITFieldDef] = [
 
 let kWorkoutFields: [FITFieldDef] = [
     FITFieldDef(number: 4, size: 1,  baseType: .enumType), // sport
-    FITFieldDef(number: 8, size: 16, baseType: .string),   // wkt_name (16 chars)
+    FITFieldDef(number: 7, size: 16, baseType: .string),   // wkt_name (field 7, not 8 which is sub_sport)
     FITFieldDef(number: 6, size: 2,  baseType: .uint16),   // num_valid_steps
 ]
 
