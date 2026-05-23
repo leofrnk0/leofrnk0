@@ -12,16 +12,21 @@ struct IntervalChartView: View {
 
             // Profile chart — bars bottom-aligned, height = intensity
             GeometryReader { geo in
+                let spacing: CGFloat = 1
+                let count = CGFloat(steps.count)
+                let availableWidth = max(1, geo.size.width - spacing * max(0, count - 1))
+                let totalDur = CGFloat(max(1, totalDuration))
+
                 ZStack(alignment: .bottom) {
                     // Baseline
                     Rectangle()
                         .fill(Color.appBorder)
                         .frame(height: 1)
 
-                    HStack(alignment: .bottom, spacing: 2) {
+                    HStack(alignment: .bottom, spacing: spacing) {
                         ForEach(steps) { step in
-                            let w = max(4, geo.size.width * CGFloat(step.durationSeconds) / CGFloat(max(1, totalDuration)))
-                            let h = max(6, geo.size.height * step.heightFactor)
+                            let w = max(2, availableWidth * CGFloat(step.durationSeconds) / totalDur)
+                            let h = max(4, geo.size.height * step.heightFactor)
                             ZoneBlock(step: step, width: w, height: h,
                                       isHighlighted: selectedStep?.id == step.id)
                                 .onTapGesture {

@@ -326,10 +326,11 @@ struct CreateWorkoutView: View {
     }
 
     private var previewCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             Label("Preview", systemImage: "waveform.path.ecg")
                 .font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
             IntervalChartView(steps: flattenedSteps, totalDuration: totalSeconds)
+            IntervalTableView(steps: flattenedSteps, sport: sport)
         }
         .padding(14)
         .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
