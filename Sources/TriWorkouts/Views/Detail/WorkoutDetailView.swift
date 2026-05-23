@@ -5,8 +5,11 @@ import AppKit
 
 struct WorkoutDetailView: View {
     let workout: Workout
-    @Environment(AppSettings.self) private var settings
-    @State private var showEdit = false
+    @Environment(AppSettings.self)  private var settings
+    @Environment(WorkoutStore.self) private var store
+    @Environment(\.dismiss)         private var dismiss
+    @State private var showEdit          = false
+    @State private var showDeleteConfirm = false
 
     var body: some View {
         ScrollView {
@@ -38,10 +41,23 @@ struct WorkoutDetailView: View {
                         Label("Edit", systemImage: "pencil")
                     }
                 }
+                if store.isUserWorkout(workout) {
+                    ToolbarItem(placement: .secondaryAction) {
+                        Button(role: .destructive) { showDeleteConfirm = true } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                }
             }
             ToolbarItem(placement: .primaryAction) {
                 ExportMenuButton(workout: workout)
             }
+        }
+        .alert("Delete Workout?", isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive) { store.deleteWorkout(workout); dismiss() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(""\(workout.name)" will be permanently deleted.")
         }
         .sheet(isPresented: $showEdit) {
             CreateWorkoutView(editingWorkout: workout)

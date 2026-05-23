@@ -118,8 +118,18 @@ struct CreateWorkoutView: View {
     @State private var items: [DraftItem]
 
     @State private var editingItemID: String? = nil
-    @State private var showStepEditor = false
+    @State private var showStepEditor  = false
     @State private var showRepeatEditor = false
+
+    // Scientific source
+    @State private var hasSource:          Bool   = false
+    @State private var sourceType:         String = "paper"
+    @State private var sourceTitle:        String = ""
+    @State private var sourceAuthors:      String = ""
+    @State private var sourceYear:         String = ""
+    @State private var sourceDOI:          String = ""
+    @State private var sourceURL:          String = ""
+    @State private var sourceInstitution:  String = ""
 
     init(editingWorkout: Workout? = nil) {
         self.editingWorkout = editingWorkout
@@ -130,6 +140,16 @@ struct CreateWorkoutView: View {
             _authorName         = State(initialValue: w.author)
             _workoutDescription = State(initialValue: w.description)
             _items              = State(initialValue: w.steps.map { .step(DraftStep(from: $0)) })
+            if let src = w.source {
+                _hasSource         = State(initialValue: true)
+                _sourceType        = State(initialValue: src.type)
+                _sourceTitle       = State(initialValue: src.title)
+                _sourceAuthors     = State(initialValue: src.authors.joined(separator: ", "))
+                _sourceYear        = State(initialValue: "\(src.year)")
+                _sourceDOI         = State(initialValue: src.doi ?? "")
+                _sourceURL         = State(initialValue: src.url ?? "")
+                _sourceInstitution = State(initialValue: src.institution ?? "")
+            }
         } else {
             _name               = State(initialValue: "")
             _sport              = State(initialValue: .cycling)
@@ -456,6 +476,67 @@ struct CreateWorkoutView: View {
                 .lineLimit(3...6).padding(12)
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder))
+            sourceSection
+        }
+    }
+
+    private var sourceSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle(isOn: $hasSource.animation(.easeOut(duration: 0.15))) {
+                Label("Scientific Source", systemImage: "graduationcap")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .tint(Color.mutedBlue)
+
+            if hasSource {
+                VStack(spacing: 8) {
+                    Picker("Type", selection: $sourceType) {
+                        Text("Paper").tag("paper")
+                        Text("Book").tag("book")
+                        Text("Thesis").tag("thesis")
+                        Text("Coaching").tag("coaching")
+                    }
+                    .pickerStyle(.segmented)
+
+                    TextField("Title", text: $sourceTitle, axis: .vertical)
+                        .lineLimit(2...3).padding(10)
+                        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 9))
+                        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.appBorder))
+
+                    TextField("Authors (comma-separated)", text: $sourceAuthors)
+                        .padding(10)
+                        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 9))
+                        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.appBorder))
+
+                    HStack(spacing: 8) {
+                        TextField("Year", text: $sourceYear)
+                            .frame(width: 64)
+                            .padding(10)
+                            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 9))
+                            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.appBorder))
+                        TextField("Institution (optional)", text: $sourceInstitution)
+                            .padding(10)
+                            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 9))
+                            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.appBorder))
+                    }
+
+                    TextField("DOI (optional, e.g. 10.1234/…)", text: $sourceDOI)
+                        .padding(10)
+                        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 9))
+                        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.appBorder))
+
+                    if sourceDOI.isEmpty {
+                        TextField("URL (optional)", text: $sourceURL)
+                            .padding(10)
+                            .background(Color.appCard, in: RoundedRectangle(cornerRadius: 9))
+                            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.appBorder))
+                    }
+                }
+                .padding(10)
+                .background(Color.appCard.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.mutedBlue.opacity(0.25)))
+            }
         }
     }
 
@@ -472,6 +553,22 @@ struct CreateWorkoutView: View {
                         equipment: s.equipment, cadence: s.cadence)
         }
         let total = indexed.reduce(0) { $0 + $1.durationSeconds }
+        let builtSource: WorkoutSource? = {
+            guard hasSource, !sourceTitle.trimmingCharacters(in: .whitespaces).isEmpty,
+                  let year = Int(sourceYear) else { return nil }
+            let authors = sourceAuthors
+                .split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+            return WorkoutSource(
+                type:        sourceType,
+                title:       sourceTitle.trimmingCharacters(in: .whitespaces),
+                authors:     authors.isEmpty ? [authorName.isEmpty ? "Unknown" : authorName] : authors,
+                year:        year,
+                doi:         sourceDOI.trimmingCharacters(in: .whitespaces).isEmpty ? nil : sourceDOI.trimmingCharacters(in: .whitespaces),
+                url:         sourceURL.trimmingCharacters(in: .whitespaces).isEmpty  ? nil : sourceURL.trimmingCharacters(in: .whitespaces),
+                institution: sourceInstitution.trimmingCharacters(in: .whitespaces).isEmpty ? nil : sourceInstitution.trimmingCharacters(in: .whitespaces)
+            )
+        }()
         let workout = Workout(
             id: editingWorkout?.id ?? "user-\(UUID().uuidString)",
             name: name.trimmingCharacters(in: .whitespaces),
@@ -479,7 +576,7 @@ struct CreateWorkoutView: View {
             totalDurationSeconds: total, tss: computedTSS, intensityFactor: computedIF,
             description: workoutDescription.isEmpty ? name : workoutDescription,
             author: authorName.isEmpty ? "My Workout" : authorName,
-            steps: indexed, source: nil
+            steps: indexed, source: builtSource
         )
         if editingWorkout != nil { store.updateWorkout(workout) } else { store.addWorkout(workout) }
         dismiss()
