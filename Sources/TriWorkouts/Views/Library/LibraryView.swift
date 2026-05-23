@@ -23,7 +23,7 @@ struct LibraryView: View {
             .padding()
         }
         .background(Color.appBackground)
-        .searchable(text: $store.searchText, prompt: "Workouts suchen…")
+        .searchable(text: $store.searchText, prompt: "Search workouts…")
         .navigationTitle("TriWorkouts")
         .toolbar {
             #if os(iOS)
@@ -74,7 +74,7 @@ struct LibraryView: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
             if store.activeFilterCount > 0 {
-                Button("Zurücksetzen") { store.clearFilters() }
+                Button("Reset") { store.clearFilters() }
                     .font(.caption.weight(.medium))
                     .foregroundStyle(Color.mutedOrange)
             }
@@ -91,7 +91,7 @@ struct LibraryView: View {
                     WorkoutCard(workout: workout, isSelected: selectedWorkout?.id == workout.id)
                         .overlay(alignment: .topLeading) {
                             if store.isUserWorkout(workout) {
-                                Text("Eigenes")
+                                Text("Custom")
                                     .font(.caption2.weight(.bold))
                                     .foregroundStyle(.white)
                                     .padding(.horizontal, 6).padding(.vertical, 2)
@@ -104,13 +104,13 @@ struct LibraryView: View {
                 .contextMenu {
                     if settings.isAdmin {
                         Button { editingWorkout = workout } label: {
-                            Label("Bearbeiten", systemImage: "pencil")
+                            Label("Edit", systemImage: "pencil")
                         }
                         Button(role: .destructive) {
                             if selectedWorkout?.id == workout.id { selectedWorkout = nil }
                             store.deleteWorkout(workout)
                         } label: {
-                            Label("Workout löschen", systemImage: "trash")
+                            Label("Delete Workout", systemImage: "trash")
                         }
                     }
                 }
@@ -122,9 +122,9 @@ struct LibraryView: View {
         VStack(spacing: 14) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 40)).foregroundStyle(.tertiary)
-            Text("Keine Workouts gefunden")
+            Text("No workouts found")
                 .font(.headline).foregroundStyle(.secondary)
-            Text("Filter oder Suchbegriff anpassen")
+            Text("Adjust filters or search term")
                 .font(.subheadline).foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity).padding(.vertical, 60)

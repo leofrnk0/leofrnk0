@@ -111,7 +111,7 @@ struct IntervalChartView: View {
     }
 
     private var tapHint: some View {
-        Text("Balken antippen für Details")
+        Text("Tap bar for details")
             .font(.caption2)
             .foregroundStyle(.tertiary)
             .frame(maxWidth: .infinity, alignment: .center)

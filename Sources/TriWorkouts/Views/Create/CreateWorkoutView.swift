@@ -153,14 +153,14 @@ struct CreateWorkoutView: View {
         NavigationStack {
             mainContent
                 .background(Color.appBackground)
-                .navigationTitle(editingWorkout == nil ? "Workout erstellen" : "Workout bearbeiten")
+                .navigationTitle(editingWorkout == nil ? "Create Workout" : "Edit Workout")
                 #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Speichern") { save() }
+                        Button("Save") { save() }
                             .fontWeight(.semibold).disabled(!isValid)
                     }
                 }
@@ -243,7 +243,7 @@ struct CreateWorkoutView: View {
     // MARK: - Sub-views
 
     private var nameField: some View {
-        TextField("Workout-Name", text: $name)
+        TextField("Workout Name", text: $name)
             .font(.title3.weight(.semibold))
             .padding(14)
             .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
@@ -295,7 +295,7 @@ struct CreateWorkoutView: View {
 
     private var previewCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Vorschau", systemImage: "waveform.path.ecg")
+            Label("Preview", systemImage: "waveform.path.ecg")
                 .font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
             IntervalChartView(steps: flattenedSteps, totalDuration: totalSeconds)
         }
@@ -317,7 +317,7 @@ struct CreateWorkoutView: View {
                 Button { editingItemID = nil; showStepEditor = true } label: {
                     VStack(spacing: 12) {
                         Image(systemName: "plus.circle").font(.system(size: 36)).foregroundStyle(.tertiary)
-                        Text("Ersten Schritt hinzufügen").font(.subheadline.weight(.medium)).foregroundStyle(.tertiary)
+                        Text("Add First Step").font(.subheadline.weight(.medium)).foregroundStyle(.tertiary)
                     }
                     .frame(maxWidth: .infinity).padding(.vertical, 32)
                     .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
@@ -376,13 +376,13 @@ struct CreateWorkoutView: View {
     private var addMenu: some View {
         Menu {
             Button { editingItemID = nil; showStepEditor = true } label: {
-                Label("Einzelner Schritt", systemImage: "plus.circle")
+                Label("Single Step", systemImage: "plus.circle")
             }
             Button { editingItemID = nil; showRepeatEditor = true } label: {
-                Label("Wiederholungsblock", systemImage: "repeat")
+                Label("Repeat Block", systemImage: "repeat")
             }
         } label: {
-            Label("Hinzufügen", systemImage: "plus.circle.fill")
+            Label("Add", systemImage: "plus.circle.fill")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Color.mutedOrange)
         }
@@ -393,7 +393,7 @@ struct CreateWorkoutView: View {
         HStack(spacing: 8) {
             MetricPill(value: String(format: "%.2f", computedIF), label: "IF",    color: sport.color)
             MetricPill(value: "\(computedTSS)",                   label: "TSS",   color: Color.mutedOrange)
-            MetricPill(value: formattedTotal,                     label: "Gesamt",color: .secondary)
+            MetricPill(value: formattedTotal,                     label: "Total", color: .secondary)
         }
     }
 
@@ -402,11 +402,11 @@ struct CreateWorkoutView: View {
             Label("Details", systemImage: "info.circle")
                 .font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            TextField("Autor", text: $authorName)
+            TextField("Author", text: $authorName)
                 .padding(12)
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder))
-            TextField("Beschreibung (optional)", text: $workoutDescription, axis: .vertical)
+            TextField("Description (optional)", text: $workoutDescription, axis: .vertical)
                 .lineLimit(3...6).padding(12)
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.appBorder))
@@ -429,7 +429,7 @@ struct CreateWorkoutView: View {
             sport: sport, tags: Array(selectedTags),
             totalDurationSeconds: total, tss: computedTSS, intensityFactor: computedIF,
             description: workoutDescription.isEmpty ? name : workoutDescription,
-            author: authorName.isEmpty ? "Eigenes Workout" : authorName,
+            author: authorName.isEmpty ? "My Workout" : authorName,
             steps: indexed, source: nil
         )
         if editingWorkout != nil { store.updateWorkout(workout) } else { store.addWorkout(workout) }
@@ -554,7 +554,7 @@ fileprivate struct StepEditorSheet: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // Intensity
-                    editorSection("Intensität", icon: "bolt") {
+                    editorSection("Intensity", icon: "bolt") {
                         HStack(spacing: 8) {
                             ForEach([StepIntensity.warmup, .work, .rest, .cooldown], id: \.self) { i in
                                 let on = draft.intensity == i
@@ -574,10 +574,10 @@ fileprivate struct StepEditorSheet: View {
                     }
 
                     // Duration
-                    editorSection("Dauer", icon: "clock") {
+                    editorSection("Duration", icon: "clock") {
                         HStack(spacing: 12) {
                             DurationSpinner(value: $draft.minutes, label: "min", range: 0...180, step: 1)
-                            DurationSpinner(value: $draft.seconds, label: "sek", range: 0...55, step: 5)
+                            DurationSpinner(value: $draft.seconds, label: "sec", range: 0...55, step: 5)
                         }
                     }
 
@@ -617,7 +617,7 @@ fileprivate struct StepEditorSheet: View {
                     }
 
                     // Description
-                    editorSection("Beschreibung", icon: "text.alignleft") {
+                    editorSection("Description", icon: "text.alignleft") {
                         TextField("Optional", text: $draft.stepDescription, axis: .vertical)
                             .lineLimit(2...4).padding(12)
                             .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
@@ -627,14 +627,14 @@ fileprivate struct StepEditorSheet: View {
                 .padding(20)
             }
             .background(Color.appBackground)
-            .navigationTitle(isNew ? "Schritt hinzufügen" : "Schritt bearbeiten")
+            .navigationTitle(isNew ? "Add Step" : "Edit Step")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Fertig") { onSave(draft); dismiss() }
+                    Button("Done") { onSave(draft); dismiss() }
                         .fontWeight(.semibold).disabled(draft.durationSeconds <= 0)
                 }
             }
@@ -686,7 +686,7 @@ fileprivate struct RepeatBlockEditorSheet: View {
                 VStack(spacing: 20) {
                     // Count spinner
                     VStack(alignment: .leading, spacing: 10) {
-                        Label("Wiederholungen", systemImage: "repeat")
+                        Label("Repetitions", systemImage: "repeat")
                             .font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
                         HStack(spacing: 24) {
                             Button { count = max(2, count - 1) } label: {
@@ -708,11 +708,11 @@ fileprivate struct RepeatBlockEditorSheet: View {
                     // Inner steps
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Label("Schritte pro Runde (\(innerSteps.count))", systemImage: "arrow.triangle.2.circlepath")
+                            Label("Steps per Round (\(innerSteps.count))", systemImage: "arrow.triangle.2.circlepath")
                                 .font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
                             Spacer()
                             Button { editingInnerID = nil; showInnerEditor = true } label: {
-                                Label("Hinzufügen", systemImage: "plus.circle.fill")
+                                Label("Add", systemImage: "plus.circle.fill")
                                     .font(.caption.weight(.semibold)).foregroundStyle(Color.mutedOrange)
                             }
                             .buttonStyle(.plain)
@@ -722,7 +722,7 @@ fileprivate struct RepeatBlockEditorSheet: View {
                             Button { showInnerEditor = true } label: {
                                 VStack(spacing: 8) {
                                     Image(systemName: "plus.circle").font(.title2).foregroundStyle(.tertiary)
-                                    Text("Schritt hinzufügen").font(.caption).foregroundStyle(.tertiary)
+                                    Text("Add Step").font(.caption).foregroundStyle(.tertiary)
                                 }
                                 .frame(maxWidth: .infinity).padding(.vertical, 20)
                                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
@@ -753,14 +753,14 @@ fileprivate struct RepeatBlockEditorSheet: View {
                         HStack(spacing: 12) {
                             VStack(spacing: 3) {
                                 Text(fmt(roundTotal)).font(.callout.monospacedDigit().weight(.bold))
-                                Text("pro Runde").font(.caption2).foregroundStyle(.tertiary)
+                                Text("per round").font(.caption2).foregroundStyle(.tertiary)
                             }
                             .frame(maxWidth: .infinity).padding(.vertical, 10)
                             .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
 
                             VStack(spacing: 3) {
                                 Text(fmt(blockTotal)).font(.callout.monospacedDigit().weight(.bold)).foregroundStyle(Color.mutedOrange)
-                                Text("Gesamt").font(.caption2).foregroundStyle(.tertiary)
+                                Text("Total").font(.caption2).foregroundStyle(.tertiary)
                             }
                             .frame(maxWidth: .infinity).padding(.vertical, 10)
                             .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
@@ -770,14 +770,14 @@ fileprivate struct RepeatBlockEditorSheet: View {
                 .padding(20)
             }
             .background(Color.appBackground)
-            .navigationTitle(isNew ? "Wiederholungsblock" : "Block bearbeiten")
+            .navigationTitle(isNew ? "Repeat Block" : "Edit Block")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Fertig") { onSave(count, innerSteps); dismiss() }
+                    Button("Done") { onSave(count, innerSteps); dismiss() }
                         .fontWeight(.semibold).disabled(innerSteps.isEmpty)
                 }
             }

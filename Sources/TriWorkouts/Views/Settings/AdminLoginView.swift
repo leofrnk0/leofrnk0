@@ -19,9 +19,9 @@ struct AdminLoginView: View {
                     .animation(.easeOut(duration: 0.2), value: failed)
 
                 VStack(spacing: 6) {
-                    Text("Admin-Login")
+                    Text("Admin Login")
                         .font(.title2.weight(.bold))
-                    Text(failed ? "Falscher PIN – nochmal versuchen" : "PIN eingeben")
+                    Text(failed ? "Wrong PIN – try again" : "Enter PIN")
                         .font(.callout)
                         .foregroundStyle(failed ? Color.mutedRed : .secondary)
                         .animation(.easeOut(duration: 0.2), value: failed)
@@ -51,7 +51,7 @@ struct AdminLoginView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { failed = false }
                     }
                 } label: {
-                    Text("Anmelden")
+                    Text("Log In")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -70,7 +70,7 @@ struct AdminLoginView: View {
             .navigationTitle("")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Abbrechen") { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
             }
         }
