@@ -12,7 +12,7 @@ struct WorkoutCard: View {
             // Sport colour accent bar
             Rectangle()
                 .fill(workout.sport.color)
-                .frame(height: 3)
+                .frame(height: 4)
 
             VStack(alignment: .leading, spacing: 12) {
                 headerRow
@@ -22,15 +22,16 @@ struct WorkoutCard: View {
             }
             .padding(16)
         }
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(
-                    highlighted ? workout.sport.color.opacity(0.6) : Color.appBorder,
+                    highlighted ? workout.sport.color.opacity(0.7) : Color.appBorder,
                     lineWidth: highlighted ? 1.5 : 1
                 )
         )
-        .shadow(color: highlighted ? workout.sport.color.opacity(0.15) : .black.opacity(0.15), radius: highlighted ? 14 : 4, y: 2)
+        .shadow(color: highlighted ? workout.sport.color.opacity(0.28) : .black.opacity(0.20), radius: highlighted ? 18 : 5, y: 2)
         .scaleEffect(isHovered ? 1.015 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isHovered)
         .animation(.easeOut(duration: 0.2), value: isSelected)
@@ -45,7 +46,7 @@ struct WorkoutCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(workout.name)
                     .font(.headline)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.white)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 HStack(spacing: 5) {
@@ -110,11 +111,11 @@ private struct StatItem: View {
     var body: some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.system(.callout, design: .monospaced).weight(.semibold))
-                .foregroundStyle(.primary)
+                .font(.system(.callout, design: .monospaced).weight(.bold))
+                .foregroundStyle(.white)
             Text(label)
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -125,11 +126,11 @@ struct TagChip: View {
 
     var body: some View {
         Text(tag.displayName)
-            .font(.caption2.weight(.medium))
+            .font(.caption2.weight(.semibold))
             .foregroundStyle(tag.color)
             .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(tag.color.opacity(0.12), in: Capsule())
-            .overlay(Capsule().stroke(tag.color.opacity(0.3), lineWidth: 0.5))
+            .background(tag.color.opacity(0.16), in: Capsule())
+            .overlay(Capsule().stroke(tag.color.opacity(0.45), lineWidth: 0.5))
     }
 }
 
