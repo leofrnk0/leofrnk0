@@ -82,7 +82,7 @@ struct IntervalTableView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Schritte (\(steps.count))", systemImage: "list.bullet.rectangle")
+            Label("Steps (\(steps.count))", systemImage: "list.bullet.rectangle")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 

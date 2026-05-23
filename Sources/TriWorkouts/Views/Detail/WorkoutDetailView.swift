@@ -93,10 +93,11 @@ struct WorkoutDetailView: View {
 
     private var mainStats: some View {
         LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible()), count: 3),
+            columns: Array(repeating: GridItem(.flexible()), count: 2),
             spacing: 10
         ) {
             StatCard(icon: "clock.fill",    label: "Total",     value: workout.formattedDuration,                        color: .secondary)
+            StatCard(icon: "bolt.fill",     label: "TSS",       value: "\(workout.tss)",                                 color: Color.mutedOrange)
             StatCard(icon: "waveform.path", label: "IF",        value: String(format: "%.2f", workout.intensityFactor),  color: workout.sport.color)
             StatCard(icon: "repeat",        label: "Intervals", value: "\(workout.intervalCount)",                        color: Color.mutedBlue)
         }
