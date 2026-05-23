@@ -60,7 +60,7 @@ struct LibraryView: View {
             if store.activeFilterCount > 0 {
                 Button("Zurücksetzen") { store.clearFilters() }
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.mutedOrange)
             }
         }
     }
@@ -81,7 +81,7 @@ struct LibraryView: View {
                                     .font(.caption2.weight(.bold))
                                     .foregroundStyle(.white)
                                     .padding(.horizontal, 6).padding(.vertical, 2)
-                                    .background(Color.purple, in: Capsule())
+                                    .background(Color.mutedPurple, in: Capsule())
                                     .padding(.top, 10).padding(.leading, 10)
                             }
                         }
@@ -128,7 +128,7 @@ struct LibraryView: View {
             Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
                 .overlay(alignment: .topTrailing) {
                     if store.activeFilterCount > 0 {
-                        Circle().fill(Color.orange).frame(width: 8, height: 8)
+                        Circle().fill(Color.mutedOrange).frame(width: 8, height: 8)
                             .offset(x: 2, y: -2)
                     }
                 }

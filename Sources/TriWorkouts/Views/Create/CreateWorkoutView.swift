@@ -27,10 +27,10 @@ fileprivate struct DraftStep: Identifiable {
 
     var intensityColor: Color {
         switch intensity {
-        case .warmup:   .blue
-        case .work:     .orange
-        case .rest:     Color(white: 0.5)
-        case .cooldown: .cyan
+        case .warmup:   .mutedBlue
+        case .work:     .mutedOrange
+        case .rest:     Color(white: 0.40)
+        case .cooldown: .mutedCyan
         }
     }
 
@@ -354,7 +354,7 @@ struct CreateWorkoutView: View {
         } label: {
             Label("Hinzufügen", systemImage: "plus.circle.fill")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.orange)
+                .foregroundStyle(.mutedOrange)
         }
         .menuStyle(.borderlessButton)
     }
@@ -362,7 +362,7 @@ struct CreateWorkoutView: View {
     private var metricsRow: some View {
         HStack(spacing: 8) {
             MetricPill(value: String(format: "%.2f", computedIF), label: "IF",    color: sport.color)
-            MetricPill(value: "\(computedTSS)",                   label: "TSS",   color: .orange)
+            MetricPill(value: "\(computedTSS)",                   label: "TSS",   color: .mutedOrange)
             MetricPill(value: formattedTotal,                     label: "Gesamt",color: .secondary)
         }
     }
@@ -618,7 +618,7 @@ fileprivate struct StepEditorSheet: View {
     }
 
     private func intensityColor(_ i: StepIntensity) -> Color {
-        switch i { case .warmup: .blue; case .work: .orange; case .rest: Color(white: 0.5); case .cooldown: .cyan }
+        switch i { case .warmup: .mutedBlue; case .work: .mutedOrange; case .rest: Color(white: 0.40); case .cooldown: .mutedCyan }
     }
     private func intensityIcon(_ i: StepIntensity) -> String {
         switch i { case .warmup: "sun.horizon.fill"; case .work: "bolt.fill"; case .rest: "pause.circle.fill"; case .cooldown: "wind" }
@@ -666,7 +666,7 @@ fileprivate struct RepeatBlockEditorSheet: View {
                                 .font(.system(size: 48, weight: .bold, design: .monospaced))
                                 .frame(maxWidth: .infinity)
                             Button { count = min(30, count + 1) } label: {
-                                Image(systemName: "plus.circle.fill").font(.largeTitle).foregroundStyle(.orange)
+                                Image(systemName: "plus.circle.fill").font(.largeTitle).foregroundStyle(.mutedOrange)
                             }
                             .buttonStyle(.plain)
                         }
@@ -682,7 +682,7 @@ fileprivate struct RepeatBlockEditorSheet: View {
                             Spacer()
                             Button { editingInnerID = nil; showInnerEditor = true } label: {
                                 Label("Hinzufügen", systemImage: "plus.circle.fill")
-                                    .font(.caption.weight(.semibold)).foregroundStyle(.orange)
+                                    .font(.caption.weight(.semibold)).foregroundStyle(.mutedOrange)
                             }
                             .buttonStyle(.plain)
                         }
@@ -728,7 +728,7 @@ fileprivate struct RepeatBlockEditorSheet: View {
                             .background(Color.appCard, in: RoundedRectangle(cornerRadius: 10))
 
                             VStack(spacing: 3) {
-                                Text(fmt(blockTotal)).font(.callout.monospacedDigit().weight(.bold)).foregroundStyle(.orange)
+                                Text(fmt(blockTotal)).font(.callout.monospacedDigit().weight(.bold)).foregroundStyle(.mutedOrange)
                                 Text("Gesamt").font(.caption2).foregroundStyle(.tertiary)
                             }
                             .frame(maxWidth: .infinity).padding(.vertical, 10)
@@ -803,7 +803,7 @@ private struct DurationSpinner: View {
             Button { value = min(range.upperBound, value + step) } label: {
                 Image(systemName: "chevron.up.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(value < range.upperBound ? .orange : Color.appBorder)
+                    .foregroundStyle(value < range.upperBound ? Color.mutedOrange : Color.appBorder)
             }
             .buttonStyle(.plain)
 
