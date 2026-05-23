@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 
+@MainActor
 @Observable
 final class WorkoutStore {
     private var bundleWorkouts: [Workout] = []
