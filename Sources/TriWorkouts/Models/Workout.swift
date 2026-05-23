@@ -204,6 +204,7 @@ struct WorkoutStep: Codable, Identifiable {
     let powerHighPercent: Double?
     let description: String
     let repeatCount: Int?
+    let distanceMeters: Int?
 
     var zoneColor: Color {
         if let z = zone { return z.color }
@@ -227,6 +228,9 @@ struct WorkoutStep: Codable, Identifiable {
     }
 
     var formattedDuration: String {
+        if let d = distanceMeters {
+            return d >= 1000 ? String(format: "%.1f km", Double(d) / 1000.0) : "\(d) m"
+        }
         let m = durationSeconds / 60
         let s = durationSeconds % 60
         if m == 0 { return "\(s)s" }
