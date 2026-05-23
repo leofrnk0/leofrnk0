@@ -2,6 +2,8 @@ import SwiftUI
 
 // MARK: - Draft models
 
+fileprivate enum DurationMode { case time, distance }
+
 fileprivate struct DraftStep: Identifiable {
     let id: String
     var intensity: StepIntensity
@@ -9,6 +11,8 @@ fileprivate struct DraftStep: Identifiable {
     var seconds: Int
     var zone: PowerZone?
     var stepDescription: String
+    var durationMode: DurationMode = .time
+    var distanceMeters: Int = 400
 
     init(intensity: StepIntensity = .work, minutes: Int = 5, seconds: Int = 0,
          zone: PowerZone? = .z3, description: String = "") {
@@ -24,11 +28,20 @@ fileprivate struct DraftStep: Identifiable {
         seconds = step.durationSeconds % 60
         zone = step.zone
         stepDescription = step.description
+        if let d = step.distanceMeters {
+            durationMode = .distance
+            distanceMeters = d
+        }
     }
 
     var durationSeconds: Int { max(1, minutes * 60 + seconds) }
 
     var formattedDuration: String {
+        if durationMode == .distance {
+            return distanceMeters >= 1000
+                ? String(format: "%.1f km", Double(distanceMeters) / 1000.0)
+                : "\(distanceMeters) m"
+        }
         let m = durationSeconds / 60; let s = durationSeconds % 60
         if m == 0 { return "\(s)s" }
         return s == 0 ? "\(m) min" : "\(m)m \(s)s"
@@ -43,12 +56,22 @@ fileprivate struct DraftStep: Identifiable {
         }
     }
 
-    func toWorkoutStep(index: Int) -> WorkoutStep {
-        WorkoutStep(id: index, intensity: intensity, durationSeconds: durationSeconds,
+    func estimatedSeconds(sport: Sport) -> Int {
+        switch sport {
+        case .swimming: return max(10, distanceMeters * 72 / 100)   // ~1:12/100m
+        case .running:  return max(30, distanceMeters * 300 / 1000) // ~5min/km
+        case .cycling:  return max(30, distanceMeters * 180 / 1000) // ~3min/km
+        }
+    }
+
+    func toWorkoutStep(index: Int, sport: Sport) -> WorkoutStep {
+        let secs = durationMode == .time ? durationSeconds : estimatedSeconds(sport: sport)
+        return WorkoutStep(id: index, intensity: intensity, durationSeconds: secs,
                     targetType: zone != nil ? .powerZone : .open, zone: zone,
                     targetZoneNumber: nil, powerLowPercent: nil, powerHighPercent: nil,
                     description: stepDescription.isEmpty ? intensity.displayName : stepDescription,
-                    repeatCount: nil)
+                    repeatCount: nil,
+                    distanceMeters: durationMode == .distance ? distanceMeters : nil)
     }
 }
 
@@ -119,9 +142,9 @@ struct CreateWorkoutView: View {
         for item in items {
             switch item {
             case .step(let s):
-                result.append(s.toWorkoutStep(index: idx)); idx += 1
+                result.append(s.toWorkoutStep(index: idx, sport: sport)); idx += 1
             case .repeatBlock(_, let c, let ss):
-                for _ in 0..<c { for s in ss { result.append(s.toWorkoutStep(index: idx)); idx += 1 } }
+                for _ in 0..<c { for s in ss { result.append(s.toWorkoutStep(index: idx, sport: sport)); idx += 1 } }
             }
         }
         return result
@@ -170,7 +193,7 @@ struct CreateWorkoutView: View {
         #endif
         // Single step editor
         .sheet(isPresented: $showStepEditor) {
-            StepEditorSheet(draft: existingStep() ?? DraftStep(), isNew: existingStep() == nil) { saved in
+            StepEditorSheet(draft: existingStep() ?? DraftStep(), isNew: existingStep() == nil, sport: sport) { saved in
                 if let id = editingItemID, let idx = items.firstIndex(where: { $0.id == id }) {
                     items[idx] = .step(saved)
                 } else { items.append(.step(saved)) }
@@ -180,7 +203,7 @@ struct CreateWorkoutView: View {
         // Repeat block editor
         .sheet(isPresented: $showRepeatEditor) {
             let block = existingBlock()
-            RepeatBlockEditorSheet(count: block?.count ?? 3, steps: block?.steps ?? [], isNew: block == nil) { count, steps in
+            RepeatBlockEditorSheet(count: block?.count ?? 3, steps: block?.steps ?? [], isNew: block == nil, sport: sport) { count, steps in
                 if let id = editingItemID, let idx = items.firstIndex(where: { $0.id == id }) {
                     items[idx] = .repeatBlock(id: id, count: count, steps: steps)
                 } else { items.append(.repeatBlock(id: UUID().uuidString, count: count, steps: steps)) }
@@ -307,7 +330,7 @@ struct CreateWorkoutView: View {
     private var stepsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("Schritte (\(items.count))", systemImage: "list.bullet.rectangle")
+                Label("Steps (\(items.count))", systemImage: "list.bullet.rectangle")
                     .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer()
                 addMenu
@@ -420,7 +443,8 @@ struct CreateWorkoutView: View {
         let indexed = steps.enumerated().map { idx, s in
             WorkoutStep(id: idx, intensity: s.intensity, durationSeconds: s.durationSeconds,
                         targetType: s.targetType, zone: s.zone, targetZoneNumber: nil,
-                        powerLowPercent: nil, powerHighPercent: nil, description: s.description, repeatCount: nil)
+                        powerLowPercent: nil, powerHighPercent: nil, description: s.description,
+                        repeatCount: nil, distanceMeters: s.distanceMeters)
         }
         let total = indexed.reduce(0) { $0 + $1.durationSeconds }
         let workout = Workout(
@@ -455,7 +479,7 @@ private struct StepCardRow: View {
                     if let zone = step.zone {
                         Text("\(zone.rawValue) · \(zone.name)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     } else {
-                        Text("Offen").font(.caption).foregroundStyle(.tertiary)
+                        Text("Open").font(.caption).foregroundStyle(.tertiary)
                     }
                     Spacer(minLength: 4)
                     Text(step.formattedDuration)
@@ -480,38 +504,46 @@ private struct RepeatBlockRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 0) {
-                // Multi-zone stripe
                 VStack(spacing: 1) {
-                    ForEach(steps) { s in
-                        Rectangle().fill(s.zone?.color ?? s.intensityColor)
-                    }
+                    ForEach(steps) { s in Rectangle().fill(s.zone?.color ?? s.intensityColor) }
                 }
                 .frame(width: 4)
                 .clipShape(RoundedRectangle(cornerRadius: 2))
-                .padding(.vertical, 6)
+                .padding(.vertical, 8)
 
-                HStack(spacing: 8) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 5).fill(Color.appElevated)
-                        Text("\(count)×").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("\(count)×")
+                            .font(.callout.weight(.bold))
+                            .foregroundStyle(Color.mutedOrange)
+                        Text("rounds")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 4)
+                        Text(formattedTotal)
+                            .font(.system(.callout, design: .monospaced).weight(.semibold))
+                            .foregroundStyle(.primary)
                     }
-                    .frame(width: 34, height: 22)
 
-                    HStack(spacing: 4) {
-                        ForEach(Array(steps.enumerated()), id: \.offset) { idx, s in
-                            HStack(spacing: 3) {
-                                Circle().fill(s.zone?.color ?? s.intensityColor).frame(width: 6, height: 6)
-                                Text(s.formattedDuration).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-                            }
-                            if idx < steps.count - 1 {
-                                Text("+").font(.caption2).foregroundStyle(.quaternary)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(steps) { s in
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(s.zone?.color ?? s.intensityColor)
+                                        .frame(width: 7, height: 7)
+                                    Text(s.intensity.displayName)
+                                        .font(.caption2.weight(.semibold))
+                                    Text(s.formattedDuration)
+                                        .font(.caption2.monospacedDigit())
+                                }
+                                .foregroundStyle(s.zone?.color ?? s.intensityColor)
+                                .padding(.horizontal, 8).padding(.vertical, 4)
+                                .background((s.zone?.color ?? s.intensityColor).opacity(0.12),
+                                            in: Capsule())
                             }
                         }
                     }
-
-                    Spacer(minLength: 4)
-                    Text(formattedTotal)
-                        .font(.system(.callout, design: .monospaced).weight(.semibold)).foregroundStyle(.primary)
                 }
                 .padding(.horizontal, 12).padding(.vertical, 10)
             }
@@ -537,16 +569,67 @@ private struct MetricPill: View {
     }
 }
 
+// MARK: - Distance spinner
+
+private struct DistanceSpinner: View {
+    @Binding var meters: Int
+    private let presets = [25, 50, 100, 150, 200, 300, 400, 500, 600, 800, 1000, 1500, 2000, 3000, 5000, 10000]
+
+    private var currentIndex: Int {
+        presets.firstIndex(where: { $0 >= meters }) ?? presets.count - 1
+    }
+    private var formatted: String {
+        meters >= 1000 ? String(format: "%.1f km", Double(meters) / 1000.0) : "\(meters) m"
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Button {
+                let i = currentIndex
+                if i < presets.count - 1 { meters = presets[i + 1] }
+            } label: {
+                Image(systemName: "chevron.up.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(currentIndex < presets.count - 1 ? Color.mutedOrange : Color.appBorder)
+            }
+            .buttonStyle(.plain)
+
+            Text(formatted)
+                .font(.system(size: 36, weight: .bold, design: .monospaced))
+                .frame(minWidth: 140, alignment: .center)
+                .contentTransition(.numericText())
+
+            Button {
+                let i = currentIndex
+                if i > 0 { meters = presets[i - 1] }
+            } label: {
+                Image(systemName: "chevron.down.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(currentIndex > 0 ? .secondary : Color.appBorder)
+            }
+            .buttonStyle(.plain)
+
+            Text("distance").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity).padding(.vertical, 16)
+        .background(Color.appCard, in: RoundedRectangle(cornerRadius: 14))
+        .onAppear {
+            if !presets.contains(meters) { meters = 400 }
+        }
+    }
+}
+
 // MARK: - Step editor sheet (redesigned, no Form)
 
 fileprivate struct StepEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: DraftStep
     let isNew: Bool
+    let sport: Sport
     fileprivate let onSave: (DraftStep) -> Void
 
-    fileprivate init(draft: DraftStep, isNew: Bool, onSave: @escaping (DraftStep) -> Void) {
-        _draft = State(initialValue: draft); self.isNew = isNew; self.onSave = onSave
+    fileprivate init(draft: DraftStep, isNew: Bool, sport: Sport, onSave: @escaping (DraftStep) -> Void) {
+        _draft = State(initialValue: draft); self.isNew = isNew; self.sport = sport; self.onSave = onSave
     }
 
     var body: some View {
@@ -575,9 +658,20 @@ fileprivate struct StepEditorSheet: View {
 
                     // Duration
                     editorSection("Duration", icon: "clock") {
-                        HStack(spacing: 12) {
-                            DurationSpinner(value: $draft.minutes, label: "min", range: 0...180, step: 1)
-                            DurationSpinner(value: $draft.seconds, label: "sec", range: 0...55, step: 5)
+                        Picker("", selection: $draft.durationMode) {
+                            Text("Time").tag(DurationMode.time)
+                            Text("Distance").tag(DurationMode.distance)
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.bottom, 4)
+
+                        if draft.durationMode == .time {
+                            HStack(spacing: 12) {
+                                DurationSpinner(value: $draft.minutes, label: "min", range: 0...180, step: 1)
+                                DurationSpinner(value: $draft.seconds, label: "sec", range: 0...55, step: 5)
+                            }
+                        } else {
+                            DistanceSpinner(meters: $draft.distanceMeters)
                         }
                     }
 
@@ -589,7 +683,7 @@ fileprivate struct StepEditorSheet: View {
                             Button { draft.zone = nil } label: {
                                 VStack(spacing: 4) {
                                     Image(systemName: "minus.circle").font(.body)
-                                    Text("Offen").font(.caption.weight(.semibold))
+                                    Text("Open").font(.caption.weight(.semibold))
                                 }
                                 .foregroundStyle(noZoneOn ? .white : .secondary)
                                 .frame(maxWidth: .infinity).padding(.vertical, 12)
@@ -663,15 +757,16 @@ fileprivate struct RepeatBlockEditorSheet: View {
     @State private var count: Int
     @State private var innerSteps: [DraftStep]
     let isNew: Bool
+    let sport: Sport
     fileprivate let onSave: (Int, [DraftStep]) -> Void
 
     @State private var editingInnerID: String? = nil
     @State private var showInnerEditor = false
 
-    fileprivate init(count: Int = 3, steps: [DraftStep] = [], isNew: Bool, onSave: @escaping (Int, [DraftStep]) -> Void) {
+    fileprivate init(count: Int = 3, steps: [DraftStep] = [], isNew: Bool, sport: Sport, onSave: @escaping (Int, [DraftStep]) -> Void) {
         _count = State(initialValue: max(2, count))
         _innerSteps = State(initialValue: steps)
-        self.isNew = isNew; self.onSave = onSave
+        self.isNew = isNew; self.sport = sport; self.onSave = onSave
     }
 
     private var roundTotal: Int { innerSteps.reduce(0) { $0 + $1.durationSeconds } }
@@ -784,7 +879,7 @@ fileprivate struct RepeatBlockEditorSheet: View {
         }
         .sheet(isPresented: $showInnerEditor) {
             let existing = editingInnerID.flatMap { id in innerSteps.first { $0.id == id } }
-            StepEditorSheet(draft: existing ?? DraftStep(), isNew: existing == nil) { saved in
+            StepEditorSheet(draft: existing ?? DraftStep(), isNew: existing == nil, sport: sport) { saved in
                 if let id = editingInnerID, let idx = innerSteps.firstIndex(where: { $0.id == id }) {
                     innerSteps[idx] = saved
                 } else { innerSteps.append(saved) }
