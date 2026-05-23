@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(WorkoutStore.self) private var store
     @State private var selectedWorkout: Workout?
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         #if os(macOS)
@@ -14,18 +15,36 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 300, ideal: 420)
         } detail: {
             if let workout = selectedWorkout {
-                WorkoutDetailView(workout: workout)
+                WorkoutDetailView(workout: workout, onDeleted: { selectedWorkout = nil })
             } else {
                 emptyDetail
             }
         }
         .navigationSplitViewStyle(.balanced)
         #else
-        NavigationStack {
-            LibraryView(selectedWorkout: $selectedWorkout)
-                .navigationDestination(item: $selectedWorkout) { workout in
-                    WorkoutDetailView(workout: workout)
+        if sizeClass == .regular {
+            // iPad: full three-column split view
+            NavigationSplitView {
+                FilterView()
+                    .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 300)
+            } content: {
+                LibraryView(selectedWorkout: $selectedWorkout)
+            } detail: {
+                if let workout = selectedWorkout {
+                    WorkoutDetailView(workout: workout, onDeleted: { selectedWorkout = nil })
+                } else {
+                    emptyDetail
                 }
+            }
+            .navigationSplitViewStyle(.balanced)
+        } else {
+            // iPhone: single-column stack
+            NavigationStack {
+                LibraryView(selectedWorkout: $selectedWorkout)
+                    .navigationDestination(item: $selectedWorkout) { workout in
+                        WorkoutDetailView(workout: workout)
+                    }
+            }
         }
         #endif
     }

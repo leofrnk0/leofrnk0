@@ -3,9 +3,11 @@ import SwiftUI
 struct LibraryView: View {
     @Environment(WorkoutStore.self) private var store
     @Environment(AppSettings.self) private var settings
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @Binding var selectedWorkout: Workout?
     @State private var showCreate   = false
     @State private var showSettings = false
+    @State private var showFilter   = false
     @State private var editingWorkout: Workout? = nil
 
     private var visibleWorkouts: [Workout] {
@@ -31,6 +33,12 @@ struct LibraryView: View {
                 HStack(spacing: 4) {
                     settingsButton
                     if settings.isAdmin { createButton }
+                }
+            }
+            // Filter button only on iPhone – iPad has the sidebar
+            if sizeClass == .compact {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    filterButton
                 }
             }
             #else
@@ -59,6 +67,13 @@ struct LibraryView: View {
                 .presentationDragIndicator(.visible)
                 #endif
         }
+        #if os(iOS)
+        .sheet(isPresented: $showFilter) {
+            FilterView()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        #endif
     }
 
     // MARK: - Subviews
@@ -122,6 +137,15 @@ struct LibraryView: View {
 
     private var createButton: some View {
         Button { showCreate = true } label: { Image(systemName: "plus") }
+    }
+
+    private var filterButton: some View {
+        Button { showFilter = true } label: {
+            Image(systemName: store.activeFilterCount > 0
+                  ? "line.3.horizontal.decrease.circle.fill"
+                  : "line.3.horizontal.decrease.circle")
+                .foregroundStyle(store.activeFilterCount > 0 ? Color.mutedOrange : .primary)
+        }
     }
 
     private var settingsButton: some View {

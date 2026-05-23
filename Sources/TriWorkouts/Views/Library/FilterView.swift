@@ -4,6 +4,7 @@ struct FilterView: View {
     @Environment(WorkoutStore.self) private var store
     @Environment(AppSettings.self) private var settings
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         @Bindable var store = store
@@ -11,7 +12,13 @@ struct FilterView: View {
         #if os(macOS)
         macOSSidebar
         #else
-        iOSSheet
+        // iPad in sidebar column: use sidebar layout (no dismiss button)
+        // iPhone as sheet: use sheet layout with Done/Reset header
+        if sizeClass == .regular {
+            macOSSidebar
+        } else {
+            iOSSheet
+        }
         #endif
     }
 

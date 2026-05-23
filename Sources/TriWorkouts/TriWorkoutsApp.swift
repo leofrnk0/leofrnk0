@@ -1,4 +1,5 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
 
 // Handles activation policy before the run loop starts.
@@ -9,10 +10,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.regular)
     }
 }
+#endif
 
 @main
 struct TriWorkoutsApp: App {
+    #if os(macOS)
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    #endif
     @State private var store    = WorkoutStore()
     @State private var settings = AppSettings()
 
@@ -22,6 +26,7 @@ struct TriWorkoutsApp: App {
                 .environment(store)
                 .environment(settings)
                 .preferredColorScheme(.dark)
+                #if os(macOS)
                 .onAppear {
                     NSApp.activate(ignoringOtherApps: true)
                     DispatchQueue.main.async {
@@ -31,8 +36,11 @@ struct TriWorkoutsApp: App {
                         }
                     }
                 }
+                #endif
         }
+        #if os(macOS)
         .defaultSize(width: 1200, height: 760)
+        #endif
         .commands {
             CommandGroup(replacing: .newItem) { }
             CommandGroup(replacing: .undoRedo) { }

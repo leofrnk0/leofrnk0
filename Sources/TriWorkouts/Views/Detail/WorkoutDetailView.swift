@@ -5,6 +5,8 @@ import AppKit
 
 struct WorkoutDetailView: View {
     let workout: Workout
+    /// Called after deletion in split-view contexts where dismiss() has no effect.
+    var onDeleted: (() -> Void)? = nil
     @Environment(AppSettings.self)  private var settings
     @Environment(WorkoutStore.self) private var store
     @Environment(\.dismiss)         private var dismiss
@@ -54,7 +56,11 @@ struct WorkoutDetailView: View {
             }
         }
         .alert("Delete Workout?", isPresented: $showDeleteConfirm) {
-            Button("Delete", role: .destructive) { store.deleteWorkout(workout); dismiss() }
+            Button("Delete", role: .destructive) {
+                store.deleteWorkout(workout)
+                onDeleted?()
+                dismiss()
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(""\(workout.name)" will be permanently deleted.")
