@@ -16,9 +16,12 @@ final class WorkoutStore {
         loadUserWorkouts()
     }
 
-    // MARK: - Combined list (user workouts first)
+    // MARK: - Combined list (user workouts override bundle by ID)
 
-    var workouts: [Workout] { userWorkouts + bundleWorkouts }
+    var workouts: [Workout] {
+        let userIDs = Set(userWorkouts.map(\.id))
+        return userWorkouts + bundleWorkouts.filter { !userIDs.contains($0.id) }
+    }
 
     var filteredWorkouts: [Workout] {
         workouts.filter { w in
@@ -36,6 +39,15 @@ final class WorkoutStore {
 
     func addWorkout(_ workout: Workout) {
         userWorkouts.insert(workout, at: 0)
+        saveUserWorkouts()
+    }
+
+    func updateWorkout(_ workout: Workout) {
+        if let idx = userWorkouts.firstIndex(where: { $0.id == workout.id }) {
+            userWorkouts[idx] = workout
+        } else {
+            userWorkouts.insert(workout, at: 0)
+        }
         saveUserWorkouts()
     }
 

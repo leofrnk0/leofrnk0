@@ -2,9 +2,16 @@ import SwiftUI
 
 struct LibraryView: View {
     @Environment(WorkoutStore.self) private var store
+    @Environment(AppSettings.self) private var settings
     @Binding var selectedWorkout: Workout?
-    @State private var showFilter = false
-    @State private var showCreate = false
+    @State private var showFilter   = false
+    @State private var showCreate   = false
+    @State private var showSettings = false
+    @State private var editingWorkout: Workout? = nil
+
+    private var visibleWorkouts: [Workout] {
+        store.filteredWorkouts.filter { settings.enabledSports.contains($0.sport) }
+    }
 
     var body: some View {
         @Bindable var store = store
@@ -12,12 +19,7 @@ struct LibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 statsBar
-
-                if store.filteredWorkouts.isEmpty {
-                    emptyState
-                } else {
-                    workoutGrid
-                }
+                if visibleWorkouts.isEmpty { emptyState } else { workoutGrid }
             }
             .padding()
         }
@@ -26,18 +28,38 @@ struct LibraryView: View {
         .navigationTitle("TriWorkouts")
         .toolbar {
             #if os(iOS)
-            ToolbarItem(placement: .navigationBarLeading) { createButton }
+            ToolbarItem(placement: .navigationBarLeading) {
+                HStack(spacing: 4) {
+                    settingsButton
+                    if settings.isAdmin { createButton }
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) { filterButton }
             #else
-            ToolbarItem(placement: .primaryAction) { createButton }
+            ToolbarItem(placement: .primaryAction) {
+                HStack(spacing: 6) {
+                    settingsButton
+                    if settings.isAdmin { createButton }
+                    filterButton
+                }
+            }
             #endif
         }
         .sheet(isPresented: $showFilter) {
-            FilterView()
-                .presentationDetents([.medium, .large])
+            FilterView().presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showCreate) {
             CreateWorkoutView()
+                #if os(iOS)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                #endif
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
+        .sheet(item: $editingWorkout) { workout in
+            CreateWorkoutView(editingWorkout: workout)
                 #if os(iOS)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
@@ -49,12 +71,12 @@ struct LibraryView: View {
 
     private var statsBar: some View {
         HStack(spacing: 12) {
-            ForEach(Sport.allCases, id: \.self) { sport in
-                let count = store.filteredWorkouts.filter { $0.sport == sport }.count
+            ForEach(Sport.allCases.filter { settings.enabledSports.contains($0) }, id: \.self) { sport in
+                let count = visibleWorkouts.filter { $0.sport == sport }.count
                 SportStatPill(sport: sport, count: count)
             }
             Spacer()
-            Text("\(store.filteredWorkouts.count) Workouts")
+            Text("\(visibleWorkouts.count) Workouts")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
             if store.activeFilterCount > 0 {
@@ -70,10 +92,8 @@ struct LibraryView: View {
             columns: [GridItem(.adaptive(minimum: 280, maximum: 420), spacing: 14)],
             spacing: 14
         ) {
-            ForEach(store.filteredWorkouts) { workout in
-                Button {
-                    selectedWorkout = workout
-                } label: {
+            ForEach(visibleWorkouts) { workout in
+                Button { selectedWorkout = workout } label: {
                     WorkoutCard(workout: workout, isSelected: selectedWorkout?.id == workout.id)
                         .overlay(alignment: .topLeading) {
                             if store.isUserWorkout(workout) {
@@ -88,7 +108,10 @@ struct LibraryView: View {
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
-                    if store.isUserWorkout(workout) {
+                    if settings.isAdmin {
+                        Button { editingWorkout = workout } label: {
+                            Label("Bearbeiten", systemImage: "pencil")
+                        }
                         Button(role: .destructive) {
                             if selectedWorkout?.id == workout.id { selectedWorkout = nil }
                             store.deleteWorkout(workout)
@@ -104,22 +127,28 @@ struct LibraryView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
+                .font(.system(size: 40)).foregroundStyle(.tertiary)
             Text("Keine Workouts gefunden")
-                .font(.headline)
-                .foregroundStyle(.secondary)
+                .font(.headline).foregroundStyle(.secondary)
             Text("Filter oder Suchbegriff anpassen")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
+                .font(.subheadline).foregroundStyle(.tertiary)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        .frame(maxWidth: .infinity).padding(.vertical, 60)
     }
 
     private var createButton: some View {
-        Button { showCreate = true } label: {
-            Image(systemName: "plus")
+        Button { showCreate = true } label: { Image(systemName: "plus") }
+    }
+
+    private var settingsButton: some View {
+        Button { showSettings = true } label: {
+            Image(systemName: "gearshape")
+                .overlay(alignment: .topTrailing) {
+                    if settings.isAdmin {
+                        Circle().fill(Color.mutedOrange).frame(width: 7, height: 7)
+                            .offset(x: 3, y: -3)
+                    }
+                }
         }
     }
 
@@ -141,7 +170,6 @@ struct LibraryView: View {
 private struct SportStatPill: View {
     let sport: Sport
     let count: Int
-
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: sport.icon).font(.caption2).foregroundStyle(sport.color)

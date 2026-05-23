@@ -5,6 +5,8 @@ import AppKit
 
 struct WorkoutDetailView: View {
     let workout: Workout
+    @Environment(AppSettings.self) private var settings
+    @State private var showEdit = false
 
     var body: some View {
         ScrollView {
@@ -29,9 +31,23 @@ struct WorkoutDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         #endif
         .toolbar {
+            if settings.isAdmin {
+                ToolbarItem(placement: .secondaryAction) {
+                    Button { showEdit = true } label: {
+                        Label("Bearbeiten", systemImage: "pencil")
+                    }
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 ExportMenuButton(workout: workout)
             }
+        }
+        .sheet(isPresented: $showEdit) {
+            CreateWorkoutView(editingWorkout: workout)
+                #if os(iOS)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                #endif
         }
     }
 
