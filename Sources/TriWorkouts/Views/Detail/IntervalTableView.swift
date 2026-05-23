@@ -4,7 +4,6 @@ import SwiftUI
 
 private enum StepGroup: Identifiable {
     case single(WorkoutStep)
-    // lastIsPartial: the final repetition omits the trailing rest step
     case repeated(count: Int, pattern: [WorkoutStep], totalSeconds: Int, lastIsPartial: Bool)
 
     var id: String {
@@ -34,23 +33,18 @@ private func groupSteps(_ steps: [WorkoutStep]) -> [StepGroup] {
             }
             guard count >= 2 else { continue }
 
-            // Detect a partial last repetition: the first element of the pattern
-            // appears once more after all full repetitions (e.g. 5th work after 4× [work+rest])
             let hasPartial = len > 1 && j < steps.count && stepsMatch([steps[j]], [pattern[0]])
-
             let score = count * len + (hasPartial ? 1 : 0)
             let bestScore = bestCount * bestLen + (bestHasPartial ? 1 : 0)
             if score > bestScore {
-                bestLen = len
-                bestCount = count
-                bestHasPartial = hasPartial
+                bestLen = len; bestCount = count; bestHasPartial = hasPartial
             }
         }
 
         if bestCount >= 2 {
             let pattern = Array(steps[i..<(i + bestLen)])
             let displayCount = bestHasPartial ? bestCount + 1 : bestCount
-            let fullSecs  = pattern.reduce(0) { $0 + $1.durationSeconds } * bestCount
+            let fullSecs   = pattern.reduce(0) { $0 + $1.durationSeconds } * bestCount
             let partialSecs = bestHasPartial ? pattern[0].durationSeconds : 0
             groups.append(.repeated(count: displayCount, pattern: pattern,
                                     totalSeconds: fullSecs + partialSecs,
@@ -73,18 +67,35 @@ private func stepsMatch(_ a: [WorkoutStep], _ b: [WorkoutStep]) -> Bool {
     }
 }
 
+private func formatMeters(_ m: Int) -> String {
+    m >= 1000 ? String(format: "%.1f km", Double(m) / 1000.0) : "\(m) m"
+}
+
 // MARK: - Main view
 
 struct IntervalTableView: View {
     let steps: [WorkoutStep]
+    var sport: Sport = .cycling
 
+    private var isSwim: Bool { sport == .swimming }
     private var groups: [StepGroup] { groupSteps(steps) }
+
+    private var totalSwimMeters: Int {
+        steps.compactMap(\.distanceMeters).reduce(0, +)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Steps (\(steps.count))", systemImage: "list.bullet.rectangle")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+            HStack {
+                Label("Steps (\(steps.count))", systemImage: "list.bullet.rectangle")
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                if isSwim && totalSwimMeters > 0 {
+                    Spacer()
+                    Text(formatMeters(totalSwimMeters))
+                        .font(.caption.monospacedDigit().weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
 
             VStack(spacing: 0) {
                 tableHeader
@@ -92,10 +103,10 @@ struct IntervalTableView: View {
                 ForEach(Array(groups.enumerated()), id: \.element.id) { idx, group in
                     switch group {
                     case .single(let step):
-                        StepRow(step: step, displayIndex: idx + 1)
+                        StepRow(step: step, displayIndex: idx + 1, isSwim: isSwim)
                     case .repeated(let count, let pattern, let total, _):
-                        RepeatGroupRow(count: count, pattern: pattern, totalSeconds: total,
-                                       displayIndex: idx + 1)
+                        RepeatGroupRow(count: count, pattern: pattern,
+                                       totalSeconds: total, displayIndex: idx + 1, isSwim: isSwim)
                     }
                     if idx < groups.count - 1 {
                         Divider().background(Color.appBorder).padding(.leading, 44)
@@ -111,13 +122,13 @@ struct IntervalTableView: View {
         HStack(spacing: 0) {
             Text("#").frame(width: 36, alignment: .center)
             Text("Type").frame(width: 90, alignment: .leading)
-            Text("Zone").frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-            Text("Duration").frame(width: 72, alignment: .trailing)
+            Text(isSwim ? "Equipment" : "Zone")
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Text(isSwim ? "Dist." : "Duration").frame(width: 72, alignment: .trailing)
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(.tertiary)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 12).padding(.vertical, 7)
     }
 }
 
@@ -126,6 +137,7 @@ struct IntervalTableView: View {
 private struct StepRow: View {
     let step: WorkoutStep
     let displayIndex: Int
+    let isSwim: Bool
     @State private var isExpanded = false
 
     var body: some View {
@@ -135,23 +147,24 @@ private struct StepRow: View {
             } label: {
                 HStack(spacing: 0) {
                     Text("\(displayIndex)")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.tertiary)
+                        .font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
                         .frame(width: 36, alignment: .center)
 
                     IntensityBadge(intensity: step.intensity)
                         .frame(width: 90, alignment: .leading)
 
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(step.zoneColor)
-                            .frame(width: 8, height: 8)
-                        Text(zoneLabel)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                    // Middle column: equipment (swim) or zone
+                    if isSwim {
+                        equipmentRow(step.equipment ?? [])
+                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        HStack(spacing: 6) {
+                            Circle().fill(step.zoneColor).frame(width: 8, height: 8)
+                            Text(zoneLabel)
+                                .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
 
                     Text(step.formattedDuration)
                         .font(.system(.callout, design: .monospaced).weight(.medium))
@@ -159,13 +172,11 @@ private struct StepRow: View {
                         .frame(width: 60, alignment: .trailing)
 
                     Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .frame(width: 20, alignment: .center)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 12).padding(.vertical, 10)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -174,18 +185,26 @@ private struct StepRow: View {
             if isExpanded {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top, spacing: 10) {
-                        Rectangle()
-                            .fill(step.zoneColor.opacity(0.6))
-                            .frame(width: 2)
-                            .cornerRadius(1)
-                        Text(step.description)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.leading)
-                            .fixedSize(horizontal: false, vertical: true)
+                        Rectangle().fill(step.zoneColor.opacity(0.6))
+                            .frame(width: 2).cornerRadius(1)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(step.description)
+                                .font(.caption).foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                            // For swimming: show HR zone in description area
+                            if isSwim, let n = step.targetZoneNumber {
+                                Text("HR Zone \(n)")
+                                    .font(.caption2).foregroundStyle(.tertiary)
+                            } else if isSwim, let z = step.zone {
+                                Text("\(z.rawValue) · \(z.name)")
+                                    .font(.caption2).foregroundStyle(.tertiary)
+                            }
+                        }
                         Spacer()
                     }
-                    if let eq = step.equipment, !eq.isEmpty {
+                    // Equipment chips in expanded area for non-swim (swim shows in row)
+                    if !isSwim, let eq = step.equipment, !eq.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 6) {
                                 ForEach(eq, id: \.self) { item in
@@ -201,15 +220,35 @@ private struct StepRow: View {
                         .padding(.leading, 12)
                     }
                 }
-                .padding(.leading, 44)
-                .padding(.trailing, 16)
-                .padding(.top, 4)
-                .padding(.bottom, 10)
+                .padding(.leading, 44).padding(.trailing, 16)
+                .padding(.top, 4).padding(.bottom, 10)
                 .background(step.zoneColor.opacity(0.04))
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .animation(.easeOut(duration: 0.2), value: isExpanded)
+    }
+
+    @ViewBuilder
+    private func equipmentRow(_ eq: [SwimEquipment]) -> some View {
+        if eq.isEmpty {
+            Text("—").font(.caption).foregroundStyle(Color(white: 0.3))
+        } else {
+            HStack(spacing: 4) {
+                ForEach(eq, id: \.self) { item in
+                    HStack(spacing: 3) {
+                        Image(systemName: item.icon)
+                            .font(.caption2)
+                        Text(item.rawValue)
+                            .font(.caption2.weight(.semibold))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(Color.mutedCyan)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Color.mutedCyan.opacity(0.10), in: Capsule())
+                }
+            }
+        }
     }
 
     private var zoneLabel: String {
@@ -226,7 +265,12 @@ private struct RepeatGroupRow: View {
     let pattern: [WorkoutStep]
     let totalSeconds: Int
     let displayIndex: Int
+    let isSwim: Bool
     @State private var isExpanded = false
+
+    private var totalSwimMeters: Int {
+        pattern.compactMap(\.distanceMeters).reduce(0, +) * count
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -234,26 +278,19 @@ private struct RepeatGroupRow: View {
                 withAnimation(.easeOut(duration: 0.2)) { isExpanded.toggle() }
             } label: {
                 HStack(spacing: 0) {
-                    // Repeat badge
                     ZStack {
-                        RoundedRectangle(cornerRadius: 5)
-                            .fill(Color.appElevated)
-                        Text("\(count)×")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(.secondary)
+                        RoundedRectangle(cornerRadius: 5).fill(Color.appElevated)
+                        Text("\(count)×").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
                     }
                     .frame(width: 36, height: 22)
 
-                    // Pattern dot-summary
+                    // Pattern summary
                     HStack(spacing: 5) {
                         ForEach(Array(pattern.enumerated()), id: \.offset) { idx, step in
                             HStack(spacing: 3) {
-                                Circle()
-                                    .fill(step.zoneColor)
-                                    .frame(width: 7, height: 7)
+                                Circle().fill(step.zoneColor).frame(width: 7, height: 7)
                                 Text(step.formattedDuration)
-                                    .font(.caption2.monospacedDigit())
-                                    .foregroundStyle(.secondary)
+                                    .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
                             }
                             if idx < pattern.count - 1 {
                                 Text("+").font(.caption2).foregroundStyle(Color.appBorder)
@@ -263,53 +300,67 @@ private struct RepeatGroupRow: View {
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, 10)
 
-                    Text(formattedTotal)
+                    // Total: show metres for swim, time for others
+                    Text(isSwim && totalSwimMeters > 0 ? formatMeters(totalSwimMeters) : formattedTime)
                         .font(.system(.callout, design: .monospaced).weight(.medium))
                         .foregroundStyle(.primary)
                         .frame(width: 60, alignment: .trailing)
 
                     Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .frame(width: 20, alignment: .center)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 12).padding(.vertical, 10)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
-            // Expanded: one row per unique step in the pattern
             if isExpanded {
                 VStack(spacing: 0) {
                     ForEach(Array(pattern.enumerated()), id: \.offset) { idx, step in
                         HStack(spacing: 0) {
                             Spacer().frame(width: 36)
-
                             IntensityBadge(intensity: step.intensity)
                                 .frame(width: 90, alignment: .leading)
 
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(step.zoneColor)
-                                    .frame(width: 8, height: 8)
-                                Text(zoneLabel(step))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
+                            if isSwim {
+                                // Equipment inline
+                                let eq = step.equipment ?? []
+                                if eq.isEmpty {
+                                    Text("—").font(.caption).foregroundStyle(Color(white: 0.3))
+                                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                                } else {
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 4) {
+                                            ForEach(eq, id: \.self) { item in
+                                                HStack(spacing: 3) {
+                                                    Image(systemName: item.icon).font(.caption2)
+                                                    Text(item.rawValue).font(.caption2.weight(.semibold))
+                                                }
+                                                .foregroundStyle(Color.mutedCyan)
+                                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                                .background(Color.mutedCyan.opacity(0.10), in: Capsule())
+                                            }
+                                        }
+                                    }
+                                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                                }
+                            } else {
+                                HStack(spacing: 6) {
+                                    Circle().fill(step.zoneColor).frame(width: 8, height: 8)
+                                    Text(zoneLabel(step)).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                }
+                                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                             }
-                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
 
                             Text(step.formattedDuration)
                                 .font(.system(.callout, design: .monospaced).weight(.medium))
                                 .foregroundStyle(.primary)
                                 .frame(width: 60, alignment: .trailing)
-
                             Spacer().frame(width: 20)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
+                        .padding(.horizontal, 12).padding(.vertical, 9)
                         .background(step.zoneColor.opacity(0.05))
 
                         if idx < pattern.count - 1 {
@@ -324,7 +375,7 @@ private struct RepeatGroupRow: View {
         .background(Color.appElevated.opacity(isExpanded ? 0.25 : 0))
     }
 
-    private var formattedTotal: String {
+    private var formattedTime: String {
         let m = totalSeconds / 60; let s = totalSeconds % 60
         if m == 0 { return "\(s)s" }
         return s == 0 ? "\(m)min" : "\(m)m \(s)s"

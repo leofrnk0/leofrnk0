@@ -15,7 +15,7 @@ struct WorkoutDetailView: View {
                 IntervalChartView(steps: workout.steps, totalDuration: workout.totalDurationSeconds)
                 mainStats
                 zoneDistribution
-                IntervalTableView(steps: workout.steps)
+                IntervalTableView(steps: workout.steps, sport: workout.sport)
                 equipmentSection
                 descriptionSection
                 authorSection
@@ -179,19 +179,32 @@ struct WorkoutDetailView: View {
             .sorted { $0.rawValue < $1.rawValue }
         if !allEquipment.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                sectionLabel("Equipment", icon: "bag.fill")
+                sectionLabel("Equipment needed", icon: "bag.fill")
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 10) {
                         ForEach(allEquipment, id: \.self) { item in
-                            Label(item.rawValue, systemImage: item.icon)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(Color.mutedCyan)
-                                .padding(.horizontal, 12).padding(.vertical, 7)
-                                .background(Color.mutedCyan.opacity(0.10), in: Capsule())
-                                .overlay(Capsule().stroke(Color.mutedCyan.opacity(0.35), lineWidth: 0.5))
+                            VStack(spacing: 8) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.mutedCyan.opacity(0.12))
+                                        .frame(width: 52, height: 52)
+                                    Image(systemName: item.icon)
+                                        .font(.title2)
+                                        .foregroundStyle(Color.mutedCyan)
+                                }
+                                Text(item.rawValue)
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(width: 72)
                         }
                     }
+                    .padding(.horizontal, 4)
                 }
+                .padding(14)
+                .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.mutedCyan.opacity(0.20)))
             }
         }
     }
