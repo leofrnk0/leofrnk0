@@ -12,6 +12,7 @@ struct WorkoutDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 sportHeader
+                IntervalChartView(steps: workout.steps, totalDuration: workout.totalDurationSeconds)
                 mainStats
                 zoneDistribution
                 IntervalTableView(steps: workout.steps)
