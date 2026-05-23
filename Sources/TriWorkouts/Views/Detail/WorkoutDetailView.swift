@@ -93,7 +93,7 @@ struct WorkoutDetailView: View {
 
     private var mainStats: some View {
         LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible()), count: 2),
+            columns: Array(repeating: GridItem(.flexible()), count: 4),
             spacing: 10
         ) {
             StatCard(icon: "clock.fill",    label: "Total",     value: workout.formattedDuration,                        color: .secondary)
