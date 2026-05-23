@@ -14,6 +14,7 @@ struct TriWorkoutsApp: App {
         }
         #if os(macOS)
         .defaultSize(width: 1200, height: 760)
+        .windowResizability(.contentMinSize)
         #endif
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FilterView: View {
     @Environment(WorkoutStore.self) private var store
+    @Environment(AppSettings.self) private var settings
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -78,14 +79,17 @@ struct FilterView: View {
     private var filterContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                FilterSection(title: "Sportart") {
-                    ForEach(Sport.allCases, id: \.self) { sport in
-                        FilterToggleRow(
-                            label: sport.displayName,
-                            icon: sport.icon,
-                            color: sport.color,
-                            isOn: store.selectedSports.contains(sport)
-                        ) { store.toggleSport(sport) }
+                let activeSports = Sport.allCases.filter { settings.enabledSports.contains($0) }
+                if activeSports.count > 1 {
+                    FilterSection(title: "Sportart") {
+                        ForEach(activeSports, id: \.self) { sport in
+                            FilterToggleRow(
+                                label: sport.displayName,
+                                icon: sport.icon,
+                                color: sport.color,
+                                isOn: store.selectedSports.contains(sport)
+                            ) { store.toggleSport(sport) }
+                        }
                     }
                 }
 
