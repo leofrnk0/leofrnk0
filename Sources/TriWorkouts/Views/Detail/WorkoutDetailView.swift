@@ -62,10 +62,10 @@ struct WorkoutDetailView: View {
 
     private var difficultyLabel: some View {
         let (color, label): (Color, String) = switch workout.tss {
-        case ..<60:    (.blue,   "Easy")
-        case 60..<85:  (.green,  "Moderat")
-        case 85..<105: (.orange, "Hart")
-        default:       (.red,    "Sehr Hart")
+        case ..<60:    (.mutedBlue,   "Easy")
+        case 60..<85:  (.mutedGreen,  "Moderat")
+        case 85..<105: (.mutedOrange, "Hart")
+        default:       (.mutedRed,    "Sehr Hart")
         }
         return HStack(spacing: 5) {
             Circle().fill(color).frame(width: 7, height: 7)
@@ -81,9 +81,9 @@ struct WorkoutDetailView: View {
             spacing: 10
         ) {
             StatCard(icon: "clock.fill",    label: "Gesamt",    value: workout.formattedDuration,                        color: .secondary)
-            StatCard(icon: "bolt.fill",     label: "TSS",       value: "\(workout.tss)",                                 color: .orange)
+            StatCard(icon: "bolt.fill",     label: "TSS",       value: "\(workout.tss)",                                 color: .mutedOrange)
             StatCard(icon: "waveform.path", label: "IF",        value: String(format: "%.2f", workout.intensityFactor),  color: workout.sport.color)
-            StatCard(icon: "repeat",        label: "Intervalle",value: "\(workout.intervalCount)",                        color: .blue)
+            StatCard(icon: "repeat",        label: "Intervalle",value: "\(workout.intervalCount)",                        color: .mutedBlue)
         }
     }
 
@@ -91,10 +91,10 @@ struct WorkoutDetailView: View {
 
     private var timeBreakdownData: [(label: String, seconds: Int, color: Color)] {
         [
-            ("Arbeit",     workout.steps.filter { $0.intensity == .work     }.reduce(0) { $0 + $1.durationSeconds }, .orange),
-            ("Erholung",   workout.steps.filter { $0.intensity == .rest     }.reduce(0) { $0 + $1.durationSeconds }, Color(white: 0.45)),
-            ("Warm-up",    workout.steps.filter { $0.intensity == .warmup   }.reduce(0) { $0 + $1.durationSeconds }, .blue),
-            ("Cool-down",  workout.steps.filter { $0.intensity == .cooldown }.reduce(0) { $0 + $1.durationSeconds }, .cyan),
+            ("Arbeit",     workout.steps.filter { $0.intensity == .work     }.reduce(0) { $0 + $1.durationSeconds }, Color.mutedOrange),
+            ("Erholung",   workout.steps.filter { $0.intensity == .rest     }.reduce(0) { $0 + $1.durationSeconds }, Color(white: 0.40)),
+            ("Warm-up",    workout.steps.filter { $0.intensity == .warmup   }.reduce(0) { $0 + $1.durationSeconds }, Color.mutedBlue),
+            ("Cool-down",  workout.steps.filter { $0.intensity == .cooldown }.reduce(0) { $0 + $1.durationSeconds }, Color.mutedCyan),
         ].filter { $0.seconds > 0 }
     }
 
@@ -302,7 +302,7 @@ struct SourceSection: View {
                             Image(systemName: "arrow.up.right.square").font(.caption2)
                             Text("DOI: \(doi)").font(.caption.monospacedDigit())
                         }
-                        .foregroundStyle(.blue.opacity(0.85))
+                        .foregroundStyle(Color.mutedBlue.opacity(0.85))
                     }
                 } else if let urlString = source.url,
                           let url = URL(string: urlString) {
@@ -311,14 +311,14 @@ struct SourceSection: View {
                             Image(systemName: "arrow.up.right.square").font(.caption2)
                             Text("Quelle öffnen").font(.caption)
                         }
-                        .foregroundStyle(.blue.opacity(0.85))
+                        .foregroundStyle(Color.mutedBlue.opacity(0.85))
                     }
                 }
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.blue.opacity(0.25)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.mutedBlue.opacity(0.25)))
         }
     }
 
@@ -331,9 +331,9 @@ struct SourceSection: View {
         }
         return Label(label, systemImage: icon)
             .font(.caption2.weight(.semibold))
-            .foregroundStyle(.blue)
+            .foregroundStyle(.mutedBlue)
             .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(Color.blue.opacity(0.10), in: Capsule())
+            .background(Color.mutedBlue.opacity(0.10), in: Capsule())
     }
 }
 

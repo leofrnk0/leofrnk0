@@ -16,9 +16,9 @@ enum Sport: String, Codable, CaseIterable, Hashable {
 
     var color: Color {
         switch self {
-        case .cycling:  Color(red: 0.976, green: 0.451, blue: 0.086)
-        case .running:  Color(red: 0.133, green: 0.773, blue: 0.369)
-        case .swimming: Color(red: 0.024, green: 0.714, blue: 0.831)
+        case .cycling:  .mutedOrange
+        case .running:  .mutedGreen
+        case .swimming: .mutedCyan
         }
     }
 
@@ -59,18 +59,18 @@ enum WorkoutTag: String, Codable, CaseIterable, Hashable {
 
     var color: Color {
         switch self {
-        case .vo2max:    .orange
-        case .sweetSpot: .yellow
-        case .endurance: .blue
-        case .tempo:     Color(red: 0.133, green: 0.773, blue: 0.369)
-        case .threshold: Color(red: 0.918, green: 0.702, blue: 0.031)
-        case .recovery:  .gray
-        case .sprint:    .red
-        case .technique: .purple
-        case .ftpTest:   .orange
-        case .base:      .cyan
-        case .racePrep:  .red
-        case .css:       .cyan
+        case .vo2max:    .mutedOrange
+        case .sweetSpot: .mutedYellow
+        case .endurance: .mutedBlue
+        case .tempo:     .mutedGreen
+        case .threshold: .mutedYellow
+        case .recovery:  Color(white: 0.42)
+        case .sprint:    .mutedRed
+        case .technique: .mutedPurple
+        case .ftpTest:   .mutedOrange
+        case .base:      .mutedCyan
+        case .racePrep:  .mutedRed
+        case .css:       .mutedCyan
         }
     }
 }
@@ -92,11 +92,11 @@ enum PowerZone: String, Codable, CaseIterable, Hashable {
 
     var color: Color {
         switch self {
-        case .z1: Color(white: 0.50)
-        case .z2: Color(red: 0.20, green: 0.55, blue: 1.00)
-        case .z3: Color(red: 0.15, green: 0.82, blue: 0.35)
-        case .z4: Color(red: 1.00, green: 0.55, blue: 0.00)
-        case .z5: Color(red: 0.95, green: 0.18, blue: 0.18)
+        case .z1: Color(white: 0.40)
+        case .z2: .mutedBlue
+        case .z3: .mutedGreen
+        case .z4: .mutedOrange
+        case .z5: .mutedRed
         }
     }
 
