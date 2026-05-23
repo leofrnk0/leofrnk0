@@ -1173,7 +1173,8 @@
         "intensity": "warmup",
         "durationSeconds": 600,
         "targetType": "open",
-        "description": "600 m easy mixed strokes — focus on breathing rhythm"
+        "description": "600 m easy mixed strokes — focus on breathing rhythm",
+        "distanceMeters": 600
       },
       {
         "id": 1,
@@ -1181,7 +1182,8 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "100 m @ CSS pace — check your split"
+        "description": "100 m @ CSS pace — check your split",
+        "distanceMeters": 100
       },
       {
         "id": 2,
@@ -1196,7 +1198,8 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "Rep 2 — maintain the same pace"
+        "description": "Rep 2 — maintain the same pace",
+        "distanceMeters": 100
       },
       {
         "id": 4,
@@ -1211,7 +1214,8 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "Rep 3"
+        "description": "Rep 3",
+        "distanceMeters": 100
       },
       {
         "id": 6,
@@ -1226,7 +1230,8 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "Rep 4"
+        "description": "Rep 4",
+        "distanceMeters": 100
       },
       {
         "id": 8,
@@ -1241,7 +1246,8 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "Rep 5 — halfway"
+        "description": "Rep 5 — halfway",
+        "distanceMeters": 100
       },
       {
         "id": 10,
@@ -1256,7 +1262,8 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "Rep 6"
+        "description": "Rep 6",
+        "distanceMeters": 100
       },
       {
         "id": 12,
@@ -1271,7 +1278,8 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "Rep 7"
+        "description": "Rep 7",
+        "distanceMeters": 100
       },
       {
         "id": 14,
@@ -1286,7 +1294,8 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "Rep 8"
+        "description": "Rep 8",
+        "distanceMeters": 100
       },
       {
         "id": 16,
@@ -1301,7 +1310,8 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "Rep 9"
+        "description": "Rep 9",
+        "distanceMeters": 100
       },
       {
         "id": 18,
@@ -1316,14 +1326,16 @@
         "durationSeconds": 120,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "Rep 10 — negative split if possible"
+        "description": "Rep 10 — negative split if possible",
+        "distanceMeters": 100
       },
       {
         "id": 20,
         "intensity": "cooldown",
         "durationSeconds": 300,
         "targetType": "open",
-        "description": "300 m easy backstroke/choice cool-down"
+        "description": "300 m easy backstroke/choice cool-down",
+        "distanceMeters": 300
       }
     ]
   },
@@ -1346,14 +1358,16 @@
         "intensity": "warmup",
         "durationSeconds": 600,
         "targetType": "open",
-        "description": "600 m warm-up with technique focus"
+        "description": "600 m warm-up with technique focus",
+        "distanceMeters": 600
       },
       {
         "id": 1,
         "intensity": "work",
         "durationSeconds": 40,
         "targetType": "open",
-        "description": "50 m all-out sprint — maximum stroke rate"
+        "description": "50 m all-out sprint — maximum stroke rate",
+        "distanceMeters": 50
       },
       {
         "id": 2,
@@ -1367,7 +1381,8 @@
         "intensity": "work",
         "durationSeconds": 40,
         "targetType": "open",
-        "description": "Sprint 2"
+        "description": "Sprint 2",
+        "distanceMeters": 50
       },
       {
         "id": 4,
@@ -1381,7 +1396,8 @@
         "intensity": "work",
         "durationSeconds": 40,
         "targetType": "open",
-        "description": "Sprint 3"
+        "description": "Sprint 3",
+        "distanceMeters": 50
       },
       {
         "id": 6,
@@ -1395,7 +1411,8 @@
         "intensity": "work",
         "durationSeconds": 40,
         "targetType": "open",
-        "description": "Sprint 4"
+        "description": "Sprint 4",
+        "distanceMeters": 50
       },
       {
         "id": 8,
@@ -1409,7 +1426,8 @@
         "intensity": "work",
         "durationSeconds": 40,
         "targetType": "open",
-        "description": "Sprint 5"
+        "description": "Sprint 5",
+        "distanceMeters": 50
       },
       {
         "id": 10,
@@ -1423,7 +1441,8 @@
         "intensity": "work",
         "durationSeconds": 40,
         "targetType": "open",
-        "description": "Sprint 6"
+        "description": "Sprint 6",
+        "distanceMeters": 50
       },
       {
         "id": 12,
@@ -1437,7 +1456,8 @@
         "intensity": "work",
         "durationSeconds": 40,
         "targetType": "open",
-        "description": "Sprint 7"
+        "description": "Sprint 7",
+        "distanceMeters": 50
       },
       {
         "id": 14,
@@ -1451,14 +1471,16 @@
         "intensity": "work",
         "durationSeconds": 40,
         "targetType": "open",
-        "description": "Sprint 8 — fastest split of the set"
+        "description": "Sprint 8 — fastest split of the set",
+        "distanceMeters": 50
       },
       {
         "id": 16,
         "intensity": "cooldown",
         "durationSeconds": 400,
         "targetType": "open",
-        "description": "400 m easy cool-down"
+        "description": "400 m easy cool-down",
+        "distanceMeters": 400
       }
     ]
   },
@@ -1481,63 +1503,72 @@
         "intensity": "warmup",
         "durationSeconds": 300,
         "targetType": "open",
-        "description": "300 m easy freestyle warm-up"
+        "description": "300 m easy freestyle warm-up",
+        "distanceMeters": 300
       },
       {
         "id": 1,
         "intensity": "work",
         "durationSeconds": 600,
         "targetType": "open",
-        "description": "6×100 m catch-up drill — focus on full arm extension before next stroke"
+        "description": "6×100 m catch-up drill — focus on full arm extension before next stroke",
+        "distanceMeters": 600
       },
       {
         "id": 2,
         "intensity": "rest",
         "durationSeconds": 120,
         "targetType": "open",
-        "description": "Easy backstroke 100 m"
+        "description": "Easy backstroke 100 m",
+        "distanceMeters": 100
       },
       {
         "id": 3,
         "intensity": "work",
         "durationSeconds": 600,
         "targetType": "open",
-        "description": "6×100 m fingertip drag drill — high elbow recovery"
+        "description": "6×100 m fingertip drag drill — high elbow recovery",
+        "distanceMeters": 600
       },
       {
         "id": 4,
         "intensity": "rest",
         "durationSeconds": 120,
         "targetType": "open",
-        "description": "Easy breaststroke 100 m"
+        "description": "Easy breaststroke 100 m",
+        "distanceMeters": 100
       },
       {
         "id": 5,
         "intensity": "work",
         "durationSeconds": 600,
         "targetType": "open",
-        "description": "6×100 m side kick drill — balance and rotation"
+        "description": "6×100 m side kick drill — balance and rotation",
+        "distanceMeters": 600
       },
       {
         "id": 6,
         "intensity": "rest",
         "durationSeconds": 120,
         "targetType": "open",
-        "description": "Easy backstroke 100 m"
+        "description": "Easy backstroke 100 m",
+        "distanceMeters": 100
       },
       {
         "id": 7,
         "intensity": "work",
         "durationSeconds": 600,
         "targetType": "open",
-        "description": "6×100 m bilateral breathing (3-stroke cycle) — symmetry"
+        "description": "6×100 m bilateral breathing (3-stroke cycle) — symmetry",
+        "distanceMeters": 600
       },
       {
         "id": 8,
         "intensity": "cooldown",
         "durationSeconds": 300,
         "targetType": "open",
-        "description": "300 m choice easy"
+        "description": "300 m choice easy",
+        "distanceMeters": 300
       }
     ]
   },
@@ -1560,7 +1591,8 @@
         "intensity": "warmup",
         "durationSeconds": 600,
         "targetType": "open",
-        "description": "600 m easy warm-up"
+        "description": "600 m easy warm-up",
+        "distanceMeters": 600
       },
       {
         "id": 1,
@@ -1568,7 +1600,8 @@
         "durationSeconds": 720,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "400 m @ CSS — aim for consistent 100 m splits"
+        "description": "400 m @ CSS — aim for consistent 100 m splits",
+        "distanceMeters": 400
       },
       {
         "id": 2,
@@ -1583,7 +1616,8 @@
         "durationSeconds": 720,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "400 m rep 2 — same splits"
+        "description": "400 m rep 2 — same splits",
+        "distanceMeters": 400
       },
       {
         "id": 4,
@@ -1598,7 +1632,8 @@
         "durationSeconds": 720,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "400 m rep 3 — fatigue management"
+        "description": "400 m rep 3 — fatigue management",
+        "distanceMeters": 400
       },
       {
         "id": 6,
@@ -1613,14 +1648,16 @@
         "durationSeconds": 720,
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
-        "description": "400 m rep 4 — strong finish, negative-split last 100 m"
+        "description": "400 m rep 4 — strong finish, negative-split last 100 m",
+        "distanceMeters": 400
       },
       {
         "id": 8,
         "intensity": "cooldown",
         "durationSeconds": 360,
         "targetType": "open",
-        "description": "6 min easy choice"
+        "description": "6 min easy choice",
+        "distanceMeters": 300
       }
     ]
   },
