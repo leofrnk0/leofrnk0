@@ -86,14 +86,21 @@ struct IntervalTableView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
+            HStack(alignment: .center) {
                 Label("Steps (\(steps.count))", systemImage: "list.bullet.rectangle")
                     .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                Spacer()
                 if isSwim && totalSwimMeters > 0 {
-                    Spacer()
-                    Text(formatMeters(totalSwimMeters))
-                        .font(.caption.monospacedDigit().weight(.semibold))
-                        .foregroundStyle(.tertiary)
+                    HStack(spacing: 6) {
+                        Image(systemName: "figure.pool.swim")
+                            .font(.callout)
+                        Text(formatMeters(totalSwimMeters))
+                            .font(.system(.title3, design: .monospaced).weight(.bold))
+                    }
+                    .foregroundStyle(Color.mutedCyan)
+                    .padding(.horizontal, 14).padding(.vertical, 7)
+                    .background(Color.mutedCyan.opacity(0.12), in: Capsule())
+                    .overlay(Capsule().stroke(Color.mutedCyan.opacity(0.35), lineWidth: 1))
                 }
             }
 
