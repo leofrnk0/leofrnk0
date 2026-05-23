@@ -54,6 +54,7 @@ enum WorkoutTag: String, Codable, CaseIterable, Hashable {
     case trackSession = "Track Session"
     case racePrep     = "Race Prep"
     case css          = "CSS"
+    case brick        = "Brick"
 
     var displayName: String { rawValue }
 
@@ -71,6 +72,7 @@ enum WorkoutTag: String, Codable, CaseIterable, Hashable {
         case .trackSession: Color.mutedGreen
         case .racePrep:     Color.mutedRed
         case .css:          Color.mutedCyan
+        case .brick:        Color.mutedPurple
         }
     }
 }
