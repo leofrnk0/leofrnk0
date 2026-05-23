@@ -16,6 +16,7 @@ struct WorkoutDetailView: View {
                 mainStats
                 zoneDistribution
                 IntervalTableView(steps: workout.steps)
+                equipmentSection
                 descriptionSection
                 authorSection
                 if let source = workout.source {
@@ -166,6 +167,31 @@ struct WorkoutDetailView: View {
                 .padding(14)
                 .background(Color.appCard, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appBorder))
+            }
+        }
+    }
+
+    // MARK: - Equipment
+
+    @ViewBuilder
+    private var equipmentSection: some View {
+        let allEquipment = Array(Set(workout.steps.flatMap { $0.equipment ?? [] }))
+            .sorted { $0.rawValue < $1.rawValue }
+        if !allEquipment.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                sectionLabel("Equipment", icon: "bag.fill")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(allEquipment, id: \.self) { item in
+                            Label(item.rawValue, systemImage: item.icon)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Color.mutedCyan)
+                                .padding(.horizontal, 12).padding(.vertical, 7)
+                                .background(Color.mutedCyan.opacity(0.10), in: Capsule())
+                                .overlay(Capsule().stroke(Color.mutedCyan.opacity(0.35), lineWidth: 0.5))
+                        }
+                    }
+                }
             }
         }
     }

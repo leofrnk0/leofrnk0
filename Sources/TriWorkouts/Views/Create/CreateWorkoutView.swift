@@ -13,6 +13,7 @@ fileprivate struct DraftStep: Identifiable {
     var stepDescription: String
     var durationMode: DurationMode = .time
     var distanceMeters: Int = 400
+    var swimEquipment: Set<SwimEquipment> = []
 
     init(intensity: StepIntensity = .work, minutes: Int = 5, seconds: Int = 0,
          zone: PowerZone? = .z3, description: String = "") {
@@ -32,6 +33,7 @@ fileprivate struct DraftStep: Identifiable {
             durationMode = .distance
             distanceMeters = d
         }
+        swimEquipment = Set(step.equipment ?? [])
     }
 
     var durationSeconds: Int { max(1, minutes * 60 + seconds) }
@@ -71,7 +73,8 @@ fileprivate struct DraftStep: Identifiable {
                     targetZoneNumber: nil, powerLowPercent: nil, powerHighPercent: nil,
                     description: stepDescription.isEmpty ? intensity.displayName : stepDescription,
                     repeatCount: nil,
-                    distanceMeters: durationMode == .distance ? distanceMeters : nil)
+                    distanceMeters: durationMode == .distance ? distanceMeters : nil,
+                    equipment: swimEquipment.isEmpty ? nil : Array(swimEquipment))
     }
 }
 
@@ -444,7 +447,8 @@ struct CreateWorkoutView: View {
             WorkoutStep(id: idx, intensity: s.intensity, durationSeconds: s.durationSeconds,
                         targetType: s.targetType, zone: s.zone, targetZoneNumber: nil,
                         powerLowPercent: nil, powerHighPercent: nil, description: s.description,
-                        repeatCount: nil, distanceMeters: s.distanceMeters)
+                        repeatCount: nil, distanceMeters: s.distanceMeters,
+                        equipment: s.equipment)
         }
         let total = indexed.reduce(0) { $0 + $1.durationSeconds }
         let workout = Workout(
@@ -706,6 +710,33 @@ fileprivate struct StepEditorSheet: View {
                                 }
                                 .buttonStyle(.plain)
                                 .animation(.easeOut(duration: 0.1), value: on)
+                            }
+                        }
+                    }
+
+                    // Equipment (swimming only)
+                    if sport == .swimming {
+                        editorSection("Equipment", icon: "bag.fill") {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                                ForEach(SwimEquipment.allCases, id: \.self) { item in
+                                    let on = draft.swimEquipment.contains(item)
+                                    Button {
+                                        withAnimation(.easeOut(duration: 0.1)) {
+                                            if on { draft.swimEquipment.remove(item) }
+                                            else  { draft.swimEquipment.insert(item) }
+                                        }
+                                    } label: {
+                                        Label(item.rawValue, systemImage: item.icon)
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(on ? .white : Color.mutedCyan)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 10)
+                                            .background(on ? Color.mutedCyan : Color.mutedCyan.opacity(0.10),
+                                                        in: RoundedRectangle(cornerRadius: 10))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .animation(.easeOut(duration: 0.1), value: on)
+                                }
                             }
                         }
                     }

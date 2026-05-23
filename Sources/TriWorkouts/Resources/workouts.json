@@ -1183,7 +1183,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "100 m @ CSS pace — check your split",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 2,
@@ -1199,7 +1202,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "Rep 2 — maintain the same pace",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 4,
@@ -1215,7 +1221,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "Rep 3",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 6,
@@ -1231,7 +1240,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "Rep 4",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 8,
@@ -1247,7 +1259,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "Rep 5 — halfway",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 10,
@@ -1263,7 +1278,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "Rep 6",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 12,
@@ -1279,7 +1297,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "Rep 7",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 14,
@@ -1295,7 +1316,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "Rep 8",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 16,
@@ -1311,7 +1335,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "Rep 9",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 18,
@@ -1327,7 +1354,10 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "Rep 10 — negative split if possible",
-        "distanceMeters": 100
+        "distanceMeters": 100,
+        "equipment": [
+          "Paddles"
+        ]
       },
       {
         "id": 20,
@@ -1367,7 +1397,10 @@
         "durationSeconds": 40,
         "targetType": "open",
         "description": "50 m all-out sprint — maximum stroke rate",
-        "distanceMeters": 50
+        "distanceMeters": 50,
+        "equipment": [
+          "Fins"
+        ]
       },
       {
         "id": 2,
@@ -1382,7 +1415,10 @@
         "durationSeconds": 40,
         "targetType": "open",
         "description": "Sprint 2",
-        "distanceMeters": 50
+        "distanceMeters": 50,
+        "equipment": [
+          "Fins"
+        ]
       },
       {
         "id": 4,
@@ -1397,7 +1433,10 @@
         "durationSeconds": 40,
         "targetType": "open",
         "description": "Sprint 3",
-        "distanceMeters": 50
+        "distanceMeters": 50,
+        "equipment": [
+          "Fins"
+        ]
       },
       {
         "id": 6,
@@ -1412,7 +1451,10 @@
         "durationSeconds": 40,
         "targetType": "open",
         "description": "Sprint 4",
-        "distanceMeters": 50
+        "distanceMeters": 50,
+        "equipment": [
+          "Fins"
+        ]
       },
       {
         "id": 8,
@@ -1427,7 +1469,10 @@
         "durationSeconds": 40,
         "targetType": "open",
         "description": "Sprint 5",
-        "distanceMeters": 50
+        "distanceMeters": 50,
+        "equipment": [
+          "Fins"
+        ]
       },
       {
         "id": 10,
@@ -1442,7 +1487,10 @@
         "durationSeconds": 40,
         "targetType": "open",
         "description": "Sprint 6",
-        "distanceMeters": 50
+        "distanceMeters": 50,
+        "equipment": [
+          "Fins"
+        ]
       },
       {
         "id": 12,
@@ -1457,7 +1505,10 @@
         "durationSeconds": 40,
         "targetType": "open",
         "description": "Sprint 7",
-        "distanceMeters": 50
+        "distanceMeters": 50,
+        "equipment": [
+          "Fins"
+        ]
       },
       {
         "id": 14,
@@ -1472,7 +1523,10 @@
         "durationSeconds": 40,
         "targetType": "open",
         "description": "Sprint 8 — fastest split of the set",
-        "distanceMeters": 50
+        "distanceMeters": 50,
+        "equipment": [
+          "Fins"
+        ]
       },
       {
         "id": 16,
@@ -1544,7 +1598,10 @@
         "durationSeconds": 600,
         "targetType": "open",
         "description": "6×100 m side kick drill — balance and rotation",
-        "distanceMeters": 600
+        "distanceMeters": 600,
+        "equipment": [
+          "Kickboard"
+        ]
       },
       {
         "id": 6,
@@ -1560,7 +1617,10 @@
         "durationSeconds": 600,
         "targetType": "open",
         "description": "6×100 m bilateral breathing (3-stroke cycle) — symmetry",
-        "distanceMeters": 600
+        "distanceMeters": 600,
+        "equipment": [
+          "Snorkel"
+        ]
       },
       {
         "id": 8,
@@ -1601,7 +1661,11 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "400 m @ CSS — aim for consistent 100 m splits",
-        "distanceMeters": 400
+        "distanceMeters": 400,
+        "equipment": [
+          "Paddles",
+          "Pull Buoy"
+        ]
       },
       {
         "id": 2,
@@ -1617,7 +1681,11 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "400 m rep 2 — same splits",
-        "distanceMeters": 400
+        "distanceMeters": 400,
+        "equipment": [
+          "Paddles",
+          "Pull Buoy"
+        ]
       },
       {
         "id": 4,
@@ -1633,7 +1701,11 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "400 m rep 3 — fatigue management",
-        "distanceMeters": 400
+        "distanceMeters": 400,
+        "equipment": [
+          "Paddles",
+          "Pull Buoy"
+        ]
       },
       {
         "id": 6,
@@ -1649,7 +1721,11 @@
         "targetType": "pace_zone",
         "targetZoneNumber": 4,
         "description": "400 m rep 4 — strong finish, negative-split last 100 m",
-        "distanceMeters": 400
+        "distanceMeters": 400,
+        "equipment": [
+          "Paddles",
+          "Pull Buoy"
+        ]
       },
       {
         "id": 8,

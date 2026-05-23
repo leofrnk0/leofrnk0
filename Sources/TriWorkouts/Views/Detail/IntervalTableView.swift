@@ -172,17 +172,34 @@ private struct StepRow: View {
             .background(step.zoneColor.opacity(isExpanded ? 0.06 : 0.0))
 
             if isExpanded {
-                HStack(alignment: .top, spacing: 10) {
-                    Rectangle()
-                        .fill(step.zoneColor.opacity(0.6))
-                        .frame(width: 2)
-                        .cornerRadius(1)
-                    Text(step.description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer()
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .top, spacing: 10) {
+                        Rectangle()
+                            .fill(step.zoneColor.opacity(0.6))
+                            .frame(width: 2)
+                            .cornerRadius(1)
+                        Text(step.description)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                    }
+                    if let eq = step.equipment, !eq.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(eq, id: \.self) { item in
+                                    Label(item.rawValue, systemImage: item.icon)
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(Color.mutedCyan)
+                                        .padding(.horizontal, 8).padding(.vertical, 3)
+                                        .background(Color.mutedCyan.opacity(0.12), in: Capsule())
+                                        .overlay(Capsule().stroke(Color.mutedCyan.opacity(0.35), lineWidth: 0.5))
+                                }
+                            }
+                        }
+                        .padding(.leading, 12)
+                    }
                 }
                 .padding(.leading, 44)
                 .padding(.trailing, 16)

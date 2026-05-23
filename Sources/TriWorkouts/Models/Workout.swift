@@ -193,6 +193,30 @@ enum TargetType: String, Codable {
     }
 }
 
+// MARK: - SwimEquipment
+
+enum SwimEquipment: String, Codable, CaseIterable, Hashable {
+    case paddles      = "Paddles"
+    case pullBuoy     = "Pull Buoy"
+    case fins         = "Fins"
+    case kickboard    = "Kickboard"
+    case snorkel      = "Snorkel"
+    case band         = "Band"
+    case tempoTrainer = "Tempo Trainer"
+
+    var icon: String {
+        switch self {
+        case .paddles:      "hand.raised.fill"
+        case .pullBuoy:     "oval.portrait.fill"
+        case .fins:         "forward.fill"
+        case .kickboard:    "rectangle.fill"
+        case .snorkel:      "wind"
+        case .band:         "link"
+        case .tempoTrainer: "metronome.fill"
+        }
+    }
+}
+
 // MARK: - WorkoutStep
 
 struct WorkoutStep: Codable, Identifiable {
@@ -207,6 +231,7 @@ struct WorkoutStep: Codable, Identifiable {
     let description: String
     let repeatCount: Int?
     let distanceMeters: Int?
+    let equipment: [SwimEquipment]?
 
     var zoneColor: Color {
         if let z = zone { return z.color }
